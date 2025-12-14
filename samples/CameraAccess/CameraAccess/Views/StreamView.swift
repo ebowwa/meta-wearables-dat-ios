@@ -76,6 +76,15 @@ struct StreamView: View {
         )
       }
     }
+    // Show AI generation flow in a full-screen sheet
+    .fullScreenCover(isPresented: $viewModel.showAIGeneration) {
+      AIImageFlowView(viewModel: viewModel.aiGenerationViewModel)
+        .onDisappear {
+          if viewModel.aiGenerationViewModel.state == .idle {
+            viewModel.showAIGeneration = false
+          }
+        }
+    }
   }
 }
 
@@ -105,6 +114,11 @@ struct ControlsView: View {
       // Photo button
       CircleButton(icon: "camera.fill", text: nil) {
         viewModel.capturePhoto()
+      }
+
+      // AI Generation button
+      CircleButton(icon: "wand.and.stars", text: nil) {
+        viewModel.captureForAIGeneration()
       }
     }
   }

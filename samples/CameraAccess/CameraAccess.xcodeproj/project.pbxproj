@@ -7,9 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8FD96B952E6F0F7D00F56AB1 /* MWDATCore in Frameworks */ = {isa = PBXBuildFile; productRef = 8FD96B942E6F0F7D00F56AB1 /* MWDATCore */; };
-		8FD96B952E6F0F7D00F56AB2 /* MWDATCamera in Frameworks */ = {isa = PBXBuildFile; productRef = 8FD96B942E6F0F7D00F56AB2 /* MWDATCamera */; };
-		8FD96B952E6F0F7D00F56AB3 /* MWDATMockDevice in Frameworks */ = {isa = PBXBuildFile; productRef = 8FD96B942E6F0F7D00F56AB3 /* MWDATMockDevice */; };
 		8F2D23802E856711002D0588 /* DebugMenuViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F2D237F2E856711002D0588 /* DebugMenuViewModel.swift */; };
 		8F8F00782E8ACB4600A4BDAF /* WearablesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F8F00772E8ACB4500A4BDAF /* WearablesViewModel.swift */; };
 		8FD96B7F2E6F0A9800F56AB1 /* CameraAccessApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FD96B792E6F0A9800F56AB1 /* CameraAccessApp.swift */; };
@@ -18,6 +15,9 @@
 		8FD96B882E6F0A9800F56AB1 /* StreamSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FD96B752E6F0A9800F56AB1 /* StreamSessionView.swift */; };
 		8FD96B8A2E6F0A9800F56AB1 /* PhotoPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FD96B742E6F0A9800F56AB1 /* PhotoPreviewView.swift */; };
 		8FD96B8D2E6F0A9800F56AB1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8FD96B772E6F0A9800F56AB1 /* Assets.xcassets */; };
+		8FD96B952E6F0F7D00F56AB1 /* MWDATCore in Frameworks */ = {isa = PBXBuildFile; productRef = 8FD96B942E6F0F7D00F56AB1 /* MWDATCore */; };
+		8FD96B952E6F0F7D00F56AB2 /* MWDATCamera in Frameworks */ = {isa = PBXBuildFile; productRef = 8FD96B942E6F0F7D00F56AB2 /* MWDATCamera */; };
+		8FD96B952E6F0F7D00F56AB3 /* MWDATMockDevice in Frameworks */ = {isa = PBXBuildFile; productRef = 8FD96B942E6F0F7D00F56AB3 /* MWDATMockDevice */; };
 		8FFD5FF52E8422580035E446 /* CircleButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FFD5FF22E8422580035E446 /* CircleButton.swift */; };
 		8FFD5FF62E8422580035E446 /* CustomButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FFD5FF32E8422580035E446 /* CustomButton.swift */; };
 		8FFD602C2E8433E20035E446 /* MockDeviceKitViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FFD60292E8433E20035E446 /* MockDeviceKitViewModel.swift */; };
@@ -34,6 +34,12 @@
 		E6DA451E2E79A63100E3F688 /* CardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6DA45172E79A63100E3F688 /* CardView.swift */; };
 		E6DA451F2E79A63100E3F688 /* MockDeviceKitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6DA451A2E79A63100E3F688 /* MockDeviceKitView.swift */; };
 		E6FD3BCE2EB4D53A00E7FE5D /* NonStreamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6FD3BCD2EB4D53A00E7FE5D /* NonStreamView.swift */; };
+		F0FA11112EFD000100000001 /* FalAIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0FA11102EFD000100000001 /* FalAIModels.swift */; };
+		F0FA11132EFD000100000002 /* FalAIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0FA11122EFD000100000002 /* FalAIService.swift */; };
+		F0FA11152EFD000100000003 /* AIImageGenerationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0FA11142EFD000100000003 /* AIImageGenerationViewModel.swift */; };
+		F0FA11172EFD000100000004 /* AIPromptInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0FA11162EFD000100000004 /* AIPromptInputView.swift */; };
+		F0FA11192EFD000100000005 /* AIGeneratedImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0FA11182EFD000100000005 /* AIGeneratedImageView.swift */; };
+		F0FA111B2EFD000100000006 /* AIImageFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0FA111A2EFD000100000006 /* AIImageFlowView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -88,6 +94,12 @@
 		E6DA45182E79A63100E3F688 /* MockDeviceCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDeviceCardView.swift; sourceTree = "<group>"; };
 		E6DA451A2E79A63100E3F688 /* MockDeviceKitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDeviceKitView.swift; sourceTree = "<group>"; };
 		E6FD3BCD2EB4D53A00E7FE5D /* NonStreamView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NonStreamView.swift; sourceTree = "<group>"; };
+		F0FA11102EFD000100000001 /* FalAIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FalAIModels.swift; sourceTree = "<group>"; };
+		F0FA11122EFD000100000002 /* FalAIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FalAIService.swift; sourceTree = "<group>"; };
+		F0FA11142EFD000100000003 /* AIImageGenerationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIImageGenerationViewModel.swift; sourceTree = "<group>"; };
+		F0FA11162EFD000100000004 /* AIPromptInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIPromptInputView.swift; sourceTree = "<group>"; };
+		F0FA11182EFD000100000005 /* AIGeneratedImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIGeneratedImageView.swift; sourceTree = "<group>"; };
+		F0FA111A2EFD000100000006 /* AIImageFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIImageFlowView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -141,6 +153,7 @@
 				8F2D237F2E856711002D0588 /* DebugMenuViewModel.swift */,
 				8FD96B6F2E6F0A9800F56AB1 /* StreamSessionViewModel.swift */,
 				8F8F00772E8ACB4500A4BDAF /* WearablesViewModel.swift */,
+				F0FA11142EFD000100000003 /* AIImageGenerationViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -158,6 +171,9 @@
 				8FD96B752E6F0A9800F56AB1 /* StreamSessionView.swift */,
 				E6A188472EB918740097D0E1 /* StreamView.swift */,
 				E6FD3BCD2EB4D53A00E7FE5D /* NonStreamView.swift */,
+				F0FA11162EFD000100000004 /* AIPromptInputView.swift */,
+				F0FA11182EFD000100000005 /* AIGeneratedImageView.swift */,
+				F0FA111A2EFD000100000006 /* AIImageFlowView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -167,6 +183,7 @@
 			children = (
 				8FD96B702E6F0A9800F56AB1 /* ViewModels */,
 				8FD96B762E6F0A9800F56AB1 /* Views */,
+				F0FA110F2EFD000100000000 /* Services */,
 				8FFD5FF82E8422B60035E446 /* Utils */,
 				8FD96B772E6F0A9800F56AB1 /* Assets.xcassets */,
 				8FD96B782E6F0A9800F56AB1 /* CameraAccess.entitlements */,
@@ -174,6 +191,15 @@
 				8FD96B7B2E6F0A9800F56AB1 /* Info.plist */,
 			);
 			path = CameraAccess;
+			sourceTree = "<group>";
+		};
+		F0FA110F2EFD000100000000 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				F0FA11102EFD000100000001 /* FalAIModels.swift */,
+				F0FA11122EFD000100000002 /* FalAIService.swift */,
+			);
+			path = Services;
 			sourceTree = "<group>";
 		};
 		8FFD5FF42E8422580035E446 /* Components */ = {
@@ -344,6 +370,12 @@
 				8FFD5FF52E8422580035E446 /* CircleButton.swift in Sources */,
 				8FFD5FF62E8422580035E446 /* CustomButton.swift in Sources */,
 				E6FD3BCE2EB4D53A00E7FE5D /* NonStreamView.swift in Sources */,
+				F0FA11112EFD000100000001 /* FalAIModels.swift in Sources */,
+				F0FA11132EFD000100000002 /* FalAIService.swift in Sources */,
+				F0FA11152EFD000100000003 /* AIImageGenerationViewModel.swift in Sources */,
+				F0FA11172EFD000100000004 /* AIPromptInputView.swift in Sources */,
+				F0FA11192EFD000100000005 /* AIGeneratedImageView.swift in Sources */,
+				F0FA111B2EFD000100000006 /* AIImageFlowView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -372,12 +404,11 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = CameraAccess/CameraAccess.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = V9WTTPBFK9;
+				DEVELOPMENT_TEAM = 42R8ZPM5N8;
 				ENABLE_PREVIEWS = YES;
 				FRAMEWORK_SEARCH_PATHS = "";
 				INFOPLIST_FILE = CameraAccess/Info.plist;
@@ -390,7 +421,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.meta.wearables.external.CameraAccess;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "Facebook Generic";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -403,12 +433,11 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = CameraAccess/CameraAccess.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = V9WTTPBFK9;
+				DEVELOPMENT_TEAM = 42R8ZPM5N8;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = CameraAccess/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -420,7 +449,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.meta.wearables.external.CameraAccess;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "Facebook Generic";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

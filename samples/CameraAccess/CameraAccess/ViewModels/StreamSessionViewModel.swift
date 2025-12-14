@@ -44,6 +44,10 @@ class StreamSessionViewModel: ObservableObject {
   @Published var capturedPhoto: UIImage?
   @Published var showPhotoPreview: Bool = false
 
+  // AI Generation properties
+  @Published var showAIGeneration: Bool = false
+  let aiGenerationViewModel = AIImageGenerationViewModel()
+
   private var timerTask: Task<Void, Never>?
   // The core DAT SDK StreamSession - handles all streaming operations
   private var streamSession: StreamSession
@@ -179,6 +183,20 @@ class StreamSessionViewModel: ObservableObject {
   func dismissPhotoPreview() {
     showPhotoPreview = false
     capturedPhoto = nil
+  }
+
+  // MARK: - AI Generation
+
+  /// Capture the current video frame and start AI generation flow
+  func captureForAIGeneration() {
+    guard let currentFrame = currentVideoFrame else { return }
+    aiGenerationViewModel.startWithImage(currentFrame)
+    showAIGeneration = true
+  }
+
+  func dismissAIGeneration() {
+    showAIGeneration = false
+    aiGenerationViewModel.dismiss()
   }
 
   private func startTimer() {
