@@ -32,8 +32,14 @@ actor FalAIService {
     private let pollingInterval: TimeInterval = 1.0
     private let maxPollingAttempts = 60 // 60 seconds timeout
     
+    // API Key: Use environment variable if available, otherwise use hardcoded key for development
+    // WARNING: In production, always use environment variables or secure storage
     private var apiKey: String? {
-        ProcessInfo.processInfo.environment["FAL_KEY"]
+        if let envKey = ProcessInfo.processInfo.environment["FAL_KEY"], !envKey.isEmpty {
+            return envKey
+        }
+        // Fallback for development - remove or secure this in production
+        return "YOUR_FAL_KEY_HERE"
     }
     
     // MARK: - Private Properties
