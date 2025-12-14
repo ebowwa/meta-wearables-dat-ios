@@ -30,11 +30,21 @@ struct StreamView: View {
       // Video backdrop
       if let videoFrame = viewModel.currentVideoFrame, viewModel.hasReceivedFirstFrame {
         GeometryReader { geometry in
-          Image(uiImage: videoFrame)
-            .resizable()
-            .aspectRatio(contentMode: .fill)
-            .frame(width: geometry.size.width, height: geometry.size.height)
-            .clipped()
+          ZStack {
+            Image(uiImage: videoFrame)
+              .resizable()
+              .aspectRatio(contentMode: .fill)
+              .frame(width: geometry.size.width, height: geometry.size.height)
+              .clipped()
+            
+            // Bounding box overlay for detected objects
+            if viewModel.detectionModeEnabled {
+              ForEach(viewModel.detectedObjects) { obj in
+                let rect = obj.boundingBoxForView(size: geometry.size)
+                BoundingBoxView(object: obj, rect: rect)
+              }
+            }
+          }
         }
         .edgesIgnoringSafeArea(.all)
       } else {
@@ -106,6 +116,50 @@ struct ControlsView: View {
       CircleButton(icon: "camera.fill", text: nil) {
         viewModel.capturePhoto()
       }
+
+      // Object detection button
+      CircleButton(
+        icon: viewModel.detectionModeEnabled ? "eye.slash.fill" : "eye.fill",
+        text: viewModel.detectionModeEnabled ? "ON" : nil
+      ) {
+        viewModel.toggleDetectionMode()
+      }
+    }
+  }
+}
+
+// MARK: - Bounding Box View
+
+struct BoundingBoxView: View {
+  let object: DetectedObject
+  let rect: CGRect
+  
+  var body: some View {
+    ZStack(alignment: .topLeading) {
+      // Bounding box
+      Rectangle()
+        .stroke(boxColor, lineWidth: 2)
+        .frame(width: rect.width, height: rect.height)
+        .position(x: rect.midX, y: rect.midY)
+      
+      // Label background
+      Text("\(object.label) \(Int(object.confidence * 100))%")
+        .font(.caption2.bold())
+        .foregroundColor(.white)
+        .padding(.horizontal, 4)
+        .padding(.vertical, 2)
+        .background(boxColor)
+        .cornerRadius(4)
+        .position(x: rect.minX + 40, y: rect.minY - 10)
+    }
+  }
+  
+  var boxColor: Color {
+    switch object.label.lowercased() {
+    case "person": return .green
+    case "car", "truck", "bus": return .blue
+    case "dog", "cat", "bird": return .orange
+    default: return .yellow
     }
   }
 }

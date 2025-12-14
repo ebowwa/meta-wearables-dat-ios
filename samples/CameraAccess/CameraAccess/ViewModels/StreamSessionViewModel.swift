@@ -44,6 +44,11 @@ class StreamSessionViewModel: ObservableObject {
   @Published var capturedPhoto: UIImage?
   @Published var showPhotoPreview: Bool = false
 
+  // Object detection properties
+  @Published var detectionModeEnabled: Bool = false
+  @Published var detectedObjects: [DetectedObject] = []
+  private var detectionTask: Task<Void, Never>?
+
   private var timerTask: Task<Void, Never>?
   // The core DAT SDK StreamSession - handles all streaming operations
   private var streamSession: StreamSession
@@ -231,5 +236,40 @@ class StreamSessionViewModel: ObservableObject {
     @unknown default:
       return "An unknown streaming error occurred."
     }
+  }
+
+  // MARK: - Object Detection Mode
+
+  func toggleDetectionMode() {
+    detectionModeEnabled.toggle()
+    if detectionModeEnabled {
+      startDetectionLoop()
+    } else {
+      stopDetectionLoop()
+    }
+  }
+
+  private func startDetectionLoop() {
+    detectionTask = Task { [weak self] in
+      while let self, self.detectionModeEnabled, !Task.isCancelled {
+        guard let frame = await MainActor.run(body: { self.currentVideoFrame }) else {
+          try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
+          continue
+        }
+        
+        // Run detection on current frame
+        let objects = await ObjectDetectionService.shared.detectObjects(in: frame)
+        
+        await MainActor.run {
+          self.detectedObjects = objects
+        }
+      }
+    }
+  }
+
+  private func stopDetectionLoop() {
+    detectionTask?.cancel()
+    detectionTask = nil
+    detectedObjects = []
   }
 }
