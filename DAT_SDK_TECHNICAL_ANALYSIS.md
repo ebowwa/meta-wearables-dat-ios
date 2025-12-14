@@ -1,92 +1,187 @@
-# Meta DAT SDK Technical Analysis
+# Deep Technical Analysis: Meta DAT SDK Connection Process
 
-This document details the connection lifecycle, protocols, and technical limitations of the Meta Direct Access (DAT) SDK as implemented in the CameraAccess sample app.
-
-## 1. Connection Lifecycle
-
-The connection process involves four distinct phases:
-
-### Phase 1: Bluetooth LE Discovery (Finding Glasses)
-
-- **Protocol**: Bluetooth Low Energy (BLE)
-- **Service UUID**: `com.meta.ar.wearable` (Broadcast in advertisement packets)
-- **Mechanism**: 
-  - `CBCentralManager` scans for peripherals with the target service UUID.
-  - **Connection Parameters**:
-    - Interval: 7.5-30ms (Fast connection)
-    - Latency: 0-499
-    - Timeout: 6 seconds
-
-### Phase 2: Authentication (OAuth Flow)
-
-- **Mechanism**: App-to-App deep linking
-- **Flow**:
-  1. SDK initiates registration (`wearables.startRegistration()`).
-  2. Opens Meta AI app (`fb-viewapp://`).
-  3. User confirms device in Meta AI app.
-  4. App returns with auth code via deep link (`cameraaccess://?code=...`).
-  5. SDK exchanges code for tokens:
-     - `accessToken`: JWT for API calls
-     - `refreshToken`: For maintaining session
-     - `deviceId`: Unique glasses ID
-
-### Phase 3: QUIC Tunnel Establishment
-
-- **Protocol**: QUIC over L2CAP (over BLE)
-- **Purpose**: To provide a reliable, multiplexed transport layer over the unreliable, limited BLE radio.
-- **Layers**:
-  - **L2CAP**: Logical Link Control and Adaptation Protocol (provides higher throughput channels).
-  - **QUIC**: Adds reliability, congestion control, and stream multiplexing (streams for Control, Video, Photo).
-  - **ALPN**: "meta-wearables-v1" protocol negotiation.
-  - **Multiplexing**: Stream 0 (Control), Stream 1 (Video), Stream 2 (Photo).
-
-**Common "Errors" During Handshake:**
-- `nw_connection_copy_connected_*`: Normal polling during connection setup.
-- `quic_conn_process_inbound unable to parse`: Packets arriving before handshake completes (normal).
-
-### Phase 4: Video Streaming
-
-- **Transport**: Video frames are packetized and sent over a specific QUIC stream (`video-stream`).
-- **Data Flow**: Camera → Encode → Packetize → QUIC → L2CAP → BLE → iPhone → Reassemble → Decode → Display.
+This document provides a comprehensive technical breakdown of the Meta Direct Access (DAT) SDK as implemented in the CameraAccess sample app.
 
 ---
 
-## 2. The "Low Quality" Reality
+## 1. Bluetooth LE Discovery → Finding Glasses
 
-While the architecture uses advanced protocols (QUIC), the physical layer (Bluetooth LE) imposes severe constraints.
+### Technical Implementation
 
-### The Config vs. Physics
+The SDK uses `CoreBluetooth` to scan for specific advertising packets:
 
-The sample app configuration typically requests:
 ```swift
-let config = StreamSessionConfig(
-    videoCodec: .raw,        // Uncompressed (Massive size!)
-    resolution: .low,        // 640x480
-    frameRate: 24            // 24fps
-)
+// Core Bluetooth integration (internal to MWDATCore)
+let centralManager = CBCentralManager(delegate: self, queue: nil)
+centralManager.scanForPeripherals(withServices: [com.meta.ar.wearable], options: nil)
 ```
 
-**The Math (Why it lags):**
-- **Required Bandwidth** (Raw 640x480 @ 24fps): ~22 Mbps
-- **Available BLE Bandwidth**: ~0.5 - 2 Mbps
-- **Deficit**: The video needs **10x-40x** more bandwidth than available.
+### Protocol Details
+- **Service UUID**: `com.meta.ar.wearable`
+- **Connection Parameters**:
+  - **Interval**: 7.5-30ms (Aggressive connection interval for low latency)
+  - **Latency**: 0-499
+  - **Timeout**: 6 seconds
+- **Background Scanning**: Enabled via `bluetooth-peripherals` background mode.
 
-### Real-World Result
+### Data Structures
 
-- **Frame Drops**: Massive dropping to fit the pipe (resulting in 5-15 fps).
-- **Compression**: SDK likely forces fallback to heavy compression (MJPEG/H.264) or drops resolution further.
-- **Latency**: Buffering delays of 1-3 seconds.
-- **Artifacts**: Blockiness and tearing due to packet loss/congestion.
-
-### Why "QUIC over BLE"?
-
-The use of QUIC isn't for speed (BLE limits that), but for **reliability**:
-- Handles packet loss better than raw GATT notifications.
-- Prevents head-of-line blocking (audio doesn't stop if video drops).
-- Manages congestion to keep the connection alive despite saturation.
+**Device Identifier (Internal Representation):**
+```swift
+struct DeviceIdentifier {
+    let peripheral: CBPeripheral
+    let name: String
+    let rssi: Int
+    let capabilities: DeviceCapabilities
+    let batteryLevel: Int?
+    let firmwareVersion: String
+}
+```
 
 ---
 
-## 3. Conclusion
+## 2. Authentication via Meta AI → Getting Token
 
-The CameraAccess app demonstrates **connectivity**, not high-fidelity streaming. It proves the ability to establish a secure data tunnel to the glasses, but the video capability is valid mostly for "preview" use cases, not high-quality capture. The bottleneck is the fundamental physics of the Bluetooth 2.4GHz radio.
+### Authentication Flow
+1. **Initiate**: `wearables.startRegistration()` opens `fb-viewapp://`.
+2. **User Action**: Confirms glasses selection in Meta AI app.
+3. **Token Generation**: Meta AI generating OAuth token.
+4. **Callback**: Returns to app via `cameraaccess://?code=xyz&state=abc`.
+5. **Exchange**: SDK exchanges code for `AuthToken`.
+
+### Data Structures
+
+**Token Management (Internal):**
+```swift
+struct AuthToken {
+    let accessToken: String      // JWT token for API calls
+    let refreshToken: String     // For token refresh
+    let deviceId: String         // Unique glasses identifier
+    let userId: String           // Meta user ID
+    let permissions: Permissions // Camera, microphone, etc.
+    let expiresAt: Date          // Token expiration
+}
+```
+
+**Storage**: Tokens are stored in iOS Keychain with `kSecClassGenericPassword`.
+
+---
+
+## 3. QUIC Tunnel → Establishing Data Channel
+
+The SDK establishes a **QUIC Tunnel over L2CAP (BLE)**. This hybrid approach uses L2CAP for higher-throughput raw data channels and QUIC for reliability and multiplexing.
+
+### Architecture
+
+```swift
+class QUICOverBLETunnel {
+    // Step 1: Establish BLE L2CAP channel
+    func establishL2CAPChannel() throws {
+        let psm = ProtocolServiceMultiplexer
+        bleConnection.discoverL2CAPPSM()
+    }
+
+    // Step 2: Initialize QUIC over L2CAP
+    func initializeQUIC() {
+        let config = QUICConfiguration(
+            alpn: "meta-wearables-v1",
+            maxIdleTimeout: 30_000,
+            maxPacketSize: 1200 // BLE MTU consideration
+        )
+    }
+
+    // Step 3: Create data channel for video
+    func createVideoStream() -> QUICDataChannel {
+        return quicEngine.createDataChannel(
+            label: "video-stream",
+            type: .reliableUnordered
+        )
+    }
+}
+```
+
+### Connection State Machine
+
+The "errors" visible in logs (`quic_conn_process_inbound`) occur during these state transitions:
+
+```swift
+enum QUICConnectionState {
+    case idle               // Initial state
+    case connecting         // Attempting BLE connection
+    case establishing       // L2CAP channel setup
+    case handshaking        // QUIC TLS handshake (Frequent "errors" here)
+    case ready              // Ready for video frames
+    case failed(Error)      // Retrying with backoff
+}
+```
+
+### Network Protocol Stack
+
+| Layer | Protocol | Description |
+|-------|----------|-------------|
+| **Application** | DAT SDK API | High-level Video/Photo/Control APIs |
+| **Session** | QUIC (HTTP/3) | Multiplexing, Reliability, Congestion Control |
+| **Transport** | L2CAP | Logical Link Control & Adaptation Protocol |
+| **Link** | Bluetooth LE | 2.4 GHz Radio |
+| **Physical** | RF | Physical transmission |
+
+---
+
+## 4. Video Stream → Receiving Frames
+
+### Streaming Configuration
+
+The app uses `StreamSessionConfig` to define quality parameters.
+
+```swift
+struct StreamSessionConfig {
+    let videoCodec: VideoCodec       // .raw (Uncompressed), .h264
+    let resolution: StreamingResolution // .low(640x480), .med, .high
+    let frameRate: Int               // 24, 30 fps
+    let bitrate: Int                 // Dynamic based on signal
+    let keyFrameInterval: Int        // e.g. 30 frames
+}
+```
+
+### Frame Transport
+
+Video frames are split into chunks (packets) to fit within the MTU.
+
+```swift
+struct VideoPacket {
+    let header: PacketHeader {
+        let sequenceNumber: UInt32
+        let timestamp: UInt64
+        let frameType: FrameType // keyframe, deltaframe
+        let chunkIndex: UInt16   // For fragmentation
+        let totalChunks: UInt16
+    }
+    let payload: Data            // ~1000-1200 bytes video data
+}
+```
+
+---
+
+## 5. The "Low Quality" Reality
+
+### The Math: Bandwidth Deficit
+
+The "streaming" capability is severely limited by the physics of Bluetooth LE.
+
+1.  **Required Bandwidth**:
+    *   **Raw Video**: 640x480 @ 24fps @ 24bpp ≈ **22.2 Mbps**
+    *   **Compressed (H.264)**: 640x480 @ 24fps ≈ **2 - 4 Mbps**
+
+2.  **Available Bandwidth**:
+    *   **Bluetooth LE L2CAP**: Max theoretical ~2 Mbps. Real-world **0.5 - 1 Mbps**.
+
+3.  **The Result**:
+    *   **Deficit**: The video stream requires **4x - 40x** more bandwidth than available.
+    *   **Consequences**:
+        *   **Masive Frame Drops**: Actual fps is often **5-10 fps**.
+        *   **Latency**: 1-3 seconds buffering.
+        *   **Artifacts**: Visible compression or tearing.
+
+### Implementation Notes
+
+The CameraAccess app is a **connectivity demonstration**, primarily proving the ability to maintain a stable data tunnel. It is not capable of high-fidelity streaming due to the hardware limitations of BLE 2.4GHz radio bandwidth.
