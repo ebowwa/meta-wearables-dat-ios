@@ -185,3 +185,18 @@ The "streaming" capability is severely limited by the physics of Bluetooth LE.
 ### Implementation Notes
 
 The CameraAccess app is a **connectivity demonstration**, primarily proving the ability to maintain a stable data tunnel. It is not capable of high-fidelity streaming due to the hardware limitations of BLE 2.4GHz radio bandwidth.
+
+---
+
+## 6. Available SDK Capabilities
+
+Beyond streaming, the MWDAT SDK exposes specific capabilities:
+
+| Feature | Description | Constraints |
+|---------|-------------|-------------|
+| **Live Preview** | Continuous video stream | ~5-15fps, low resolution, high latency |
+| **Photo Capture** | High-resolution still image capture | Triggered via `streamSession.capturePhoto()` |
+| **Telemetry** | Device status monitoring | Battery level, RSSI (signal), Firmware version |
+| **Connection** | Auto-reconnection & management | Handles sleep/wake cycles automatically |
+
+**Note**: Advanced features like spatial data, IMU (accelerometer/gyro) access, or microphone-only audio streams are **not exposed** in the current public SDK interface.
