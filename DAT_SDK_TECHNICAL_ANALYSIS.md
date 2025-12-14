@@ -199,4 +199,4 @@ Beyond streaming, the MWDAT SDK exposes specific capabilities:
 | **Telemetry** | Device status monitoring | Battery level, RSSI (signal), Firmware version |
 | **Connection** | Auto-reconnection & management | Handles sleep/wake cycles automatically |
 
-**Note**: Advanced features like spatial data, IMU (accelerometer/gyro) access, or microphone-only audio streams are **not exposed** in the current public SDK interface.
+**Note**: Advanced features like spatial data, IMU (accelerometer/gyro) access, raw microphone audio, or **Wake Word / Voice Control** are **not exposed** in the current public SDK interface. They remain exclusive to the first-party Meta View app.
