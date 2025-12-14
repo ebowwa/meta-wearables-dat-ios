@@ -156,6 +156,74 @@ actor FalAIService {
         
         return (image, inferenceTimeMs)
     }
+
+    /// Transform an input image based on a prompt using fast LCM model
+    /// This is the KEY method for real-time video frame transformation
+    func transformImage(
+        inputImage: UIImage,
+        prompt: String,
+        strength: Float = 0.6, // How much to change the image (0.0-1.0)
+        numInferenceSteps: Int = 4
+    ) async throws -> (image: UIImage, inferenceTimeMs: Int) {
+        guard let key = apiKey, !key.isEmpty else {
+            throw FalAIError.missingAPIKey
+        }
+        
+        let startTime = Date()
+        
+        // Convert image to base64 data URL
+        guard let imageData = inputImage.jpegData(compressionQuality: 0.8) else {
+            throw FalAIError.invalidResponse
+        }
+        let base64Image = imageData.base64EncodedString()
+        let dataUrl = "data:image/jpeg;base64,\(base64Image)"
+        
+        // Use fast LCM image-to-image endpoint
+        let url = URL(string: "https://fal.run/fal-ai/fast-lcm-diffusion/image-to-image")!
+        
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.setValue("Key \(key)", forHTTPHeaderField: "Authorization")
+        
+        let requestBody: [String: Any] = [
+            "image_url": dataUrl,
+            "prompt": prompt,
+            "strength": strength,
+            "num_inference_steps": numInferenceSteps,
+            "enable_safety_checker": false,
+            "sync_mode": true
+        ]
+        
+        urlRequest.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            let message = String(data: data, encoding: .utf8)
+            throw FalAIError.requestFailed(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 0, message: message)
+        }
+        
+        // Decode response
+        struct LCMResponse: Codable {
+            struct Image: Codable {
+                let url: String
+            }
+            let images: [Image]
+        }
+        
+        let lcmResponse = try JSONDecoder().decode(LCMResponse.self, from: data)
+        
+        guard let imageUrl = lcmResponse.images.first?.url else {
+            throw FalAIError.invalidResponse
+        }
+        
+        let resultImage = try await downloadImage(from: imageUrl)
+        let inferenceTimeMs = Int(Date().timeIntervalSince(startTime) * 1000)
+        
+        return (resultImage, inferenceTimeMs)
+    }
     
     // MARK: - Queue API
     

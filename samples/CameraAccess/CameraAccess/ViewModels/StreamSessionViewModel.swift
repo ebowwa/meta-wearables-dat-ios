@@ -282,9 +282,18 @@ class StreamSessionViewModel: ObservableObject {
   private func startAIGenerationLoop() {
     aiGenerationTask = Task { [weak self] in
       while let self, self.aiModeEnabled, !Task.isCancelled {
+        // Get current video frame to transform
+        guard let frameToTransform = await MainActor.run(body: { self.currentVideoFrame }) else {
+          try? await Task.sleep(nanoseconds: 100_000_000) // Wait 100ms if no frame
+          continue
+        }
+        
         do {
-          let result = try await FalAIService.shared.generateFastImage(
+          // Transform the video frame using img2img
+          let result = try await FalAIService.shared.transformImage(
+            inputImage: frameToTransform,
             prompt: self.aiPrompt,
+            strength: 0.5, // Keep some of original image
             numInferenceSteps: 4
           )
           await MainActor.run {
