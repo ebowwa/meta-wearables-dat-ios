@@ -73,7 +73,7 @@ struct FalAIRequest: Encodable {
         numInferenceSteps: Int = 25,
         guidanceScale: Float = 7.5,
         numImages: Int = 1,
-        enableSafetyChecker: Bool = true,
+        enableSafetyChecker: Bool = false,
         format: FalImageFormat = .jpeg
     ) {
         self.prompt = prompt

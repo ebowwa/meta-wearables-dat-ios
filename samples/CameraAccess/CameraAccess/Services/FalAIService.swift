@@ -91,11 +91,6 @@ actor FalAIService {
         // Poll for completion
         let response = try await pollForResult(requestId: requestId, apiKey: key)
         
-        // Check for NSFW content
-        if let nsfwFlags = response.hasNsfwConcepts, nsfwFlags.contains(true) {
-            throw FalAIError.nsfwContentDetected
-        }
-        
         // Download the first generated image
         guard let firstImage = response.images.first else {
             throw FalAIError.invalidResponse
