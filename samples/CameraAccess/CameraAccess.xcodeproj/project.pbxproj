@@ -40,6 +40,9 @@
 		F0FA11172EFD000100000004 /* AIPromptInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0FA11162EFD000100000004 /* AIPromptInputView.swift */; };
 		F0FA11192EFD000100000005 /* AIGeneratedImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0FA11182EFD000100000005 /* AIGeneratedImageView.swift */; };
 		F0FA111B2EFD000100000006 /* AIImageFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0FA111A2EFD000100000006 /* AIImageFlowView.swift */; };
+		F0FA111D2EFD000200000007 /* FalRealtimeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0FA111C2EFD000200000007 /* FalRealtimeService.swift */; };
+		F0FA111F2EFD000200000008 /* RealtimeStreamingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0FA111E2EFD000200000008 /* RealtimeStreamingViewModel.swift */; };
+		F0FA11212EFD000200000009 /* RealtimeStreamingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0FA11202EFD000200000009 /* RealtimeStreamingView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -100,6 +103,9 @@
 		F0FA11162EFD000100000004 /* AIPromptInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIPromptInputView.swift; sourceTree = "<group>"; };
 		F0FA11182EFD000100000005 /* AIGeneratedImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIGeneratedImageView.swift; sourceTree = "<group>"; };
 		F0FA111A2EFD000100000006 /* AIImageFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIImageFlowView.swift; sourceTree = "<group>"; };
+		F0FA111C2EFD000200000007 /* FalRealtimeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FalRealtimeService.swift; sourceTree = "<group>"; };
+		F0FA111E2EFD000200000008 /* RealtimeStreamingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeStreamingViewModel.swift; sourceTree = "<group>"; };
+		F0FA11202EFD000200000009 /* RealtimeStreamingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeStreamingView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -154,6 +160,7 @@
 				8FD96B6F2E6F0A9800F56AB1 /* StreamSessionViewModel.swift */,
 				8F8F00772E8ACB4500A4BDAF /* WearablesViewModel.swift */,
 				F0FA11142EFD000100000003 /* AIImageGenerationViewModel.swift */,
+				F0FA111E2EFD000200000008 /* RealtimeStreamingViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -174,6 +181,7 @@
 				F0FA11162EFD000100000004 /* AIPromptInputView.swift */,
 				F0FA11182EFD000100000005 /* AIGeneratedImageView.swift */,
 				F0FA111A2EFD000100000006 /* AIImageFlowView.swift */,
+				F0FA11202EFD000200000009 /* RealtimeStreamingView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -198,6 +206,7 @@
 			children = (
 				F0FA11102EFD000100000001 /* FalAIModels.swift */,
 				F0FA11122EFD000100000002 /* FalAIService.swift */,
+				F0FA111C2EFD000200000007 /* FalRealtimeService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -376,6 +385,9 @@
 				F0FA11172EFD000100000004 /* AIPromptInputView.swift in Sources */,
 				F0FA11192EFD000100000005 /* AIGeneratedImageView.swift in Sources */,
 				F0FA111B2EFD000100000006 /* AIImageFlowView.swift in Sources */,
+				F0FA111D2EFD000200000007 /* FalRealtimeService.swift in Sources */,
+				F0FA111F2EFD000200000008 /* RealtimeStreamingViewModel.swift in Sources */,
+				F0FA11212EFD000200000009 /* RealtimeStreamingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -48,6 +48,10 @@ class StreamSessionViewModel: ObservableObject {
   @Published var showAIGeneration: Bool = false
   let aiGenerationViewModel = AIImageGenerationViewModel()
 
+  // Real-time AI streaming properties
+  @Published var showRealtimeStreaming: Bool = false
+  let realtimeStreamingViewModel = RealtimeStreamingViewModel()
+
   private var timerTask: Task<Void, Never>?
   // The core DAT SDK StreamSession - handles all streaming operations
   private var streamSession: StreamSession

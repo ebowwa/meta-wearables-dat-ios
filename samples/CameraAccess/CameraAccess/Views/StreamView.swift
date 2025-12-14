@@ -85,6 +85,13 @@ struct StreamView: View {
           }
         }
     }
+    // Show real-time AI streaming
+    .fullScreenCover(isPresented: $viewModel.showRealtimeStreaming) {
+      RealtimeStreamingView(viewModel: viewModel.realtimeStreamingViewModel)
+        .onDisappear {
+          viewModel.showRealtimeStreaming = false
+        }
+    }
   }
 }
 
@@ -116,9 +123,14 @@ struct ControlsView: View {
         viewModel.capturePhoto()
       }
 
-      // AI Generation button
+      // AI Generation button (single image)
       CircleButton(icon: "wand.and.stars", text: nil) {
         viewModel.captureForAIGeneration()
+      }
+
+      // Real-time AI streaming button
+      CircleButton(icon: "bolt.fill", text: nil) {
+        viewModel.showRealtimeStreaming = true
       }
     }
   }
