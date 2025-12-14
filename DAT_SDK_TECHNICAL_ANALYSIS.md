@@ -12,8 +12,10 @@ The connection process involves four distinct phases:
 - **Service UUID**: `com.meta.ar.wearable` (Broadcast in advertisement packets)
 - **Mechanism**: 
   - `CBCentralManager` scans for peripherals with the target service UUID.
-  - Device identification via advertisement data analysis.
-  - Connection intervals typically configured for 7.5-30ms.
+  - **Connection Parameters**:
+    - Interval: 7.5-30ms (Fast connection)
+    - Latency: 0-499
+    - Timeout: 6 seconds
 
 ### Phase 2: Authentication (OAuth Flow)
 
@@ -23,8 +25,10 @@ The connection process involves four distinct phases:
   2. Opens Meta AI app (`fb-viewapp://`).
   3. User confirms device in Meta AI app.
   4. App returns with auth code via deep link (`cameraaccess://?code=...`).
-  5. SDK exchanges code for long-lived tokens (Access/Refresh/Device ID).
-  6. Tokens stored securely in Keychain.
+  5. SDK exchanges code for tokens:
+     - `accessToken`: JWT for API calls
+     - `refreshToken`: For maintaining session
+     - `deviceId`: Unique glasses ID
 
 ### Phase 3: QUIC Tunnel Establishment
 
@@ -34,7 +38,11 @@ The connection process involves four distinct phases:
   - **L2CAP**: Logical Link Control and Adaptation Protocol (provides higher throughput channels).
   - **QUIC**: Adds reliability, congestion control, and stream multiplexing (streams for Control, Video, Photo).
   - **ALPN**: "meta-wearables-v1" protocol negotiation.
-- **Handshake**: TLS 1.3 handshake occurs over the L2CAP channel. Errors visible in logs often relate to this handshake or packet fragmentation.
+  - **Multiplexing**: Stream 0 (Control), Stream 1 (Video), Stream 2 (Photo).
+
+**Common "Errors" During Handshake:**
+- `nw_connection_copy_connected_*`: Normal polling during connection setup.
+- `quic_conn_process_inbound unable to parse`: Packets arriving before handshake completes (normal).
 
 ### Phase 4: Video Streaming
 
@@ -43,24 +51,32 @@ The connection process involves four distinct phases:
 
 ---
 
-## 2. Technical Limitations & Reality
+## 2. The "Low Quality" Reality
 
-While the architecture uses advanced protocols (QUIC), the physical layer (Bluetooth LE) imposes severe constraints on real-time video performance.
+While the architecture uses advanced protocols (QUIC), the physical layer (Bluetooth LE) imposes severe constraints.
 
-### Bandwidth Bottleneck
+### The Config vs. Physics
 
-- **BLE Throughput**: Real-world application throughput is typically **0.5 - 1.5 Mbps**.
-- **Video Requirement**: Even moderate quality compressed video (480p/30fps) requires **2-5 Mbps**.
-- **Result**: The pipe is too small for standard video.
+The sample app configuration typically requests:
+```swift
+let config = StreamSessionConfig(
+    videoCodec: .raw,        // Uncompressed (Massive size!)
+    resolution: .low,        // 640x480
+    frameRate: 24            // 24fps
+)
+```
 
-### Real-World Performance
+**The Math (Why it lags):**
+- **Required Bandwidth** (Raw 640x480 @ 24fps): ~22 Mbps
+- **Available BLE Bandwidth**: ~0.5 - 2 Mbps
+- **Deficit**: The video needs **10x-40x** more bandwidth than available.
 
-Consequently, the "streaming" experienced in the sample app is:
+### Real-World Result
 
-- **Resolution**: Very low (typically **320x240** to **480x360**).
-- **Frame Rate**: Unstable, often dropping to **5-15 fps** despite configuration for higher rates.
-- **Latency**: Significant buffering delay (often exceeding 1-2 seconds).
-- **Artifacts**: Heavy compression artifacts or dropped frames due to congestion.
+- **Frame Drops**: Massive dropping to fit the pipe (resulting in 5-15 fps).
+- **Compression**: SDK likely forces fallback to heavy compression (MJPEG/H.264) or drops resolution further.
+- **Latency**: Buffering delays of 1-3 seconds.
+- **Artifacts**: Blockiness and tearing due to packet loss/congestion.
 
 ### Why "QUIC over BLE"?
 
@@ -73,4 +89,4 @@ The use of QUIC isn't for speed (BLE limits that), but for **reliability**:
 
 ## 3. Conclusion
 
-The CameraAccess app demonstrates **connectivity**, not high-fidelity streaming. It proves the ability to establish a secure data tunnel to the glasses, but the video capability is a "preview" quality stream limited by the physics of Bluetooth Low Energy, not the app's implementation.
+The CameraAccess app demonstrates **connectivity**, not high-fidelity streaming. It proves the ability to establish a secure data tunnel to the glasses, but the video capability is valid mostly for "preview" use cases, not high-quality capture. The bottleneck is the fundamental physics of the Bluetooth 2.4GHz radio.
