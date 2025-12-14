@@ -27,20 +27,62 @@ struct StreamView: View {
       Color.black
         .edgesIgnoringSafeArea(.all)
 
-      // Video backdrop
-      if let videoFrame = viewModel.currentVideoFrame, viewModel.hasReceivedFirstFrame {
+      // Video backdrop - show original or AI transformed frame
+      if viewModel.hasReceivedFirstFrame {
         GeometryReader { geometry in
-          Image(uiImage: videoFrame)
-            .resizable()
-            .aspectRatio(contentMode: .fill)
-            .frame(width: geometry.size.width, height: geometry.size.height)
-            .clipped()
+          // When AI mode is on and we have a transformed frame, show it
+          // Otherwise show the original video frame
+          if viewModel.aiModeEnabled, let aiFrame = viewModel.aiTransformedFrame {
+            Image(uiImage: aiFrame)
+              .resizable()
+              .aspectRatio(contentMode: .fill)
+              .frame(width: geometry.size.width, height: geometry.size.height)
+              .clipped()
+          } else if let videoFrame = viewModel.currentVideoFrame {
+            Image(uiImage: videoFrame)
+              .resizable()
+              .aspectRatio(contentMode: .fill)
+              .frame(width: geometry.size.width, height: geometry.size.height)
+              .clipped()
+          }
         }
         .edgesIgnoringSafeArea(.all)
       } else {
         ProgressView()
           .scaleEffect(1.5)
           .foregroundColor(.white)
+      }
+
+      // AI Mode stats overlay (top of screen)
+      if viewModel.aiModeEnabled {
+        VStack {
+          HStack {
+            // AI mode indicator
+            HStack(spacing: 6) {
+              Circle()
+                .fill(viewModel.aiTransformedFrame != nil ? Color.green : Color.yellow)
+                .frame(width: 8, height: 8)
+              Text("AI Live")
+                .font(.caption.bold())
+                .foregroundColor(.white)
+              if viewModel.aiInferenceTimeMs > 0 {
+                Text("• \(viewModel.aiInferenceTimeMs)ms")
+                  .font(.caption)
+                  .foregroundColor(.green)
+              }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color.black.opacity(0.7))
+            .cornerRadius(16)
+
+            Spacer()
+          }
+          .padding(.horizontal)
+          .padding(.top, 60)
+
+          Spacer()
+        }
       }
 
       // Bottom controls layer
@@ -128,9 +170,12 @@ struct ControlsView: View {
         viewModel.captureForAIGeneration()
       }
 
-      // Real-time AI streaming button
-      CircleButton(icon: "bolt.fill", text: nil) {
-        viewModel.showRealtimeStreaming = true
+      // Real-time AI mode toggle (inline during stream)
+      CircleButton(
+        icon: viewModel.aiModeEnabled ? "bolt.slash.fill" : "bolt.fill",
+        text: viewModel.aiModeEnabled ? "ON" : nil
+      ) {
+        viewModel.toggleAIMode()
       }
     }
   }

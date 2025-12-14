@@ -48,9 +48,16 @@ class StreamSessionViewModel: ObservableObject {
   @Published var showAIGeneration: Bool = false
   let aiGenerationViewModel = AIImageGenerationViewModel()
 
-  // Real-time AI streaming properties
+  // Real-time AI streaming properties (popup mode - deprecated)
   @Published var showRealtimeStreaming: Bool = false
   let realtimeStreamingViewModel = RealtimeStreamingViewModel()
+
+  // INLINE real-time AI mode (during live stream)
+  @Published var aiModeEnabled: Bool = false
+  @Published var aiTransformedFrame: UIImage?
+  @Published var aiInferenceTimeMs: Int = 0
+  @Published var aiPrompt: String = "A cinematic photo, award winning photography"
+  private let inlineRealtimeService = FalRealtimeService()
 
   private var timerTask: Task<Void, Never>?
   // The core DAT SDK StreamSession - handles all streaming operations
@@ -252,6 +259,62 @@ class StreamSessionViewModel: ObservableObject {
       return "Camera permission denied. Please grant permission in Settings."
     @unknown default:
       return "An unknown streaming error occurred."
+    }
+  }
+
+  // MARK: - Inline AI Mode
+
+  func toggleAIMode() {
+    aiModeEnabled.toggle()
+    if aiModeEnabled {
+      inlineRealtimeService.delegate = self
+      inlineRealtimeService.connect()
+    } else {
+      inlineRealtimeService.disconnect()
+      aiTransformedFrame = nil
+      aiInferenceTimeMs = 0
+    }
+  }
+
+  func updateAIPrompt(_ newPrompt: String) {
+    aiPrompt = newPrompt
+  }
+
+  private func sendFrameForAIProcessing() {
+    guard aiModeEnabled else { return }
+    inlineRealtimeService.send(prompt: aiPrompt, seed: Int.random(in: 0..<10_000_000), steps: 2)
+  }
+}
+
+// MARK: - FalRealtimeDelegate
+
+extension StreamSessionViewModel: FalRealtimeDelegate {
+  nonisolated func falRealtime(_ service: FalRealtimeService, didReceiveImage image: UIImage, inferenceTime: TimeInterval) {
+    Task { @MainActor in
+      self.aiTransformedFrame = image
+      self.aiInferenceTimeMs = Int(inferenceTime * 1000)
+      // Request next frame immediately for continuous generation
+      self.sendFrameForAIProcessing()
+    }
+  }
+
+  nonisolated func falRealtime(_ service: FalRealtimeService, didEncounterError error: Error) {
+    Task { @MainActor in
+      self.showError("AI Error: \(error.localizedDescription)")
+    }
+  }
+
+  nonisolated func falRealtimeDidConnect(_ service: FalRealtimeService) {
+    Task { @MainActor in
+      // Start the generation loop
+      self.sendFrameForAIProcessing()
+    }
+  }
+
+  nonisolated func falRealtimeDidDisconnect(_ service: FalRealtimeService) {
+    Task { @MainActor in
+      self.aiModeEnabled = false
+      self.aiTransformedFrame = nil
     }
   }
 }
