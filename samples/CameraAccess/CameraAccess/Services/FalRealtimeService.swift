@@ -36,7 +36,8 @@ class FalRealtimeService: NSObject {
     private var webSocket: URLSessionWebSocketTask?
     private var session: URLSession?
     
-    private let baseURL = "wss://fal.run/fal-ai/flux-schnell-realtime/ws"
+    // Correct WebSocket URL for fal.ai realtime
+    private let baseURL = "wss://ws.fal.run/fal-ai/flux-schnell/realtime"
     private let throttleInterval: TimeInterval = 0.064 // ~15fps
     
     private var lastSendTime: Date = .distantPast
@@ -119,18 +120,24 @@ class FalRealtimeService: NSObject {
     func connect() {
         guard !isConnected else { return }
         
-        // Build URL with API key
-        guard var urlComponents = URLComponents(string: baseURL) else { return }
-        urlComponents.queryItems = [
-            URLQueryItem(name: "fal_key", value: apiKey)
-        ]
+        guard let url = URL(string: baseURL) else {
+            delegate?.falRealtime(self, didEncounterError: NSError(
+                domain: "FalRealtime",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "Invalid WebSocket URL"]
+            ))
+            return
+        }
         
-        guard let url = urlComponents.url else { return }
+        // Create URL request with Authorization header
+        var request = URLRequest(url: url)
+        request.setValue("Key \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         let configuration = URLSessionConfiguration.default
         session = URLSession(configuration: configuration, delegate: self, delegateQueue: .main)
         
-        webSocket = session?.webSocketTask(with: url)
+        webSocket = session?.webSocketTask(with: request)
         webSocket?.resume()
         
         receiveMessage()
