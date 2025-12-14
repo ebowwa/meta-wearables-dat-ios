@@ -264,15 +264,14 @@ class StreamSessionViewModel: ObservableObject {
 
   // MARK: - Inline AI Mode
 
+  private var aiGenerationTask: Task<Void, Never>?
+
   func toggleAIMode() {
     aiModeEnabled.toggle()
     if aiModeEnabled {
-      inlineRealtimeService.delegate = self
-      inlineRealtimeService.connect()
+      startAIGenerationLoop()
     } else {
-      inlineRealtimeService.disconnect()
-      aiTransformedFrame = nil
-      aiInferenceTimeMs = 0
+      stopAIGenerationLoop()
     }
   }
 
@@ -280,21 +279,43 @@ class StreamSessionViewModel: ObservableObject {
     aiPrompt = newPrompt
   }
 
-  private func sendFrameForAIProcessing() {
-    guard aiModeEnabled else { return }
-    inlineRealtimeService.send(prompt: aiPrompt, seed: Int.random(in: 0..<10_000_000), steps: 2)
+  private func startAIGenerationLoop() {
+    aiGenerationTask = Task { [weak self] in
+      while let self, self.aiModeEnabled, !Task.isCancelled {
+        do {
+          let result = try await FalAIService.shared.generateFastImage(
+            prompt: self.aiPrompt,
+            numInferenceSteps: 4
+          )
+          await MainActor.run {
+            self.aiTransformedFrame = result.image
+            self.aiInferenceTimeMs = result.inferenceTimeMs
+          }
+        } catch {
+          await MainActor.run {
+            self.showError("AI Error: \(error.localizedDescription)")
+            self.aiModeEnabled = false
+          }
+          break
+        }
+      }
+    }
+  }
+
+  private func stopAIGenerationLoop() {
+    aiGenerationTask?.cancel()
+    aiGenerationTask = nil
+    aiTransformedFrame = nil
+    aiInferenceTimeMs = 0
   }
 }
 
-// MARK: - FalRealtimeDelegate
+// MARK: - FalRealtimeDelegate (kept for legacy popup mode)
 
 extension StreamSessionViewModel: FalRealtimeDelegate {
   nonisolated func falRealtime(_ service: FalRealtimeService, didReceiveImage image: UIImage, inferenceTime: TimeInterval) {
     Task { @MainActor in
-      self.aiTransformedFrame = image
-      self.aiInferenceTimeMs = Int(inferenceTime * 1000)
-      // Request next frame immediately for continuous generation
-      self.sendFrameForAIProcessing()
+      self.realtimeStreamingViewModel.generatedImage = image
     }
   }
 
@@ -304,17 +325,6 @@ extension StreamSessionViewModel: FalRealtimeDelegate {
     }
   }
 
-  nonisolated func falRealtimeDidConnect(_ service: FalRealtimeService) {
-    Task { @MainActor in
-      // Start the generation loop
-      self.sendFrameForAIProcessing()
-    }
-  }
-
-  nonisolated func falRealtimeDidDisconnect(_ service: FalRealtimeService) {
-    Task { @MainActor in
-      self.aiModeEnabled = false
-      self.aiTransformedFrame = nil
-    }
-  }
+  nonisolated func falRealtimeDidConnect(_ service: FalRealtimeService) {}
+  nonisolated func falRealtimeDidDisconnect(_ service: FalRealtimeService) {}
 }

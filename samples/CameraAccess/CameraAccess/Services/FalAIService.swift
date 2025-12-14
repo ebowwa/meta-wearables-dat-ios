@@ -98,6 +98,64 @@ actor FalAIService {
         
         return try await downloadImage(from: firstImage.url)
     }
+
+    /// Generate an image quickly using Flux Schnell - optimized for speed (~500ms-1s)
+    /// Use this for real-time/inline generation
+    func generateFastImage(
+        prompt: String,
+        numInferenceSteps: Int = 4
+    ) async throws -> (image: UIImage, inferenceTimeMs: Int) {
+        guard let key = apiKey, !key.isEmpty else {
+            throw FalAIError.missingAPIKey
+        }
+        
+        let startTime = Date()
+        
+        // Use Flux Schnell for fast generation
+        let url = URL(string: "https://fal.run/fal-ai/flux/schnell")!
+        
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.setValue("Key \(key)", forHTTPHeaderField: "Authorization")
+        
+        let requestBody: [String: Any] = [
+            "prompt": prompt,
+            "num_inference_steps": numInferenceSteps,
+            "enable_safety_checker": false,
+            "image_size": ["width": 512, "height": 512],
+            "num_images": 1
+        ]
+        
+        urlRequest.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            let message = String(data: data, encoding: .utf8)
+            throw FalAIError.requestFailed(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 0, message: message)
+        }
+        
+        // Decode response
+        struct FluxResponse: Codable {
+            struct Image: Codable {
+                let url: String
+            }
+            let images: [Image]
+        }
+        
+        let fluxResponse = try JSONDecoder().decode(FluxResponse.self, from: data)
+        
+        guard let imageUrl = fluxResponse.images.first?.url else {
+            throw FalAIError.invalidResponse
+        }
+        
+        let image = try await downloadImage(from: imageUrl)
+        let inferenceTimeMs = Int(Date().timeIntervalSince(startTime) * 1000)
+        
+        return (image, inferenceTimeMs)
+    }
     
     // MARK: - Queue API
     
