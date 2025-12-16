@@ -27,14 +27,25 @@ struct StreamView: View {
       Color.black
         .edgesIgnoringSafeArea(.all)
 
-      // Video backdrop
+      // Video backdrop with poker detection overlay
       if let videoFrame = viewModel.currentVideoFrame, viewModel.hasReceivedFirstFrame {
         GeometryReader { geometry in
-          Image(uiImage: videoFrame)
-            .resizable()
-            .aspectRatio(contentMode: .fill)
-            .frame(width: geometry.size.width, height: geometry.size.height)
-            .clipped()
+          ZStack {
+            Image(uiImage: videoFrame)
+              .resizable()
+              .aspectRatio(contentMode: .fill)
+              .frame(width: geometry.size.width, height: geometry.size.height)
+              .clipped()
+            
+            // Poker detection overlay
+            if viewModel.isPokerDetectionEnabled {
+              PokerDetectionOverlay(
+                detectedCards: viewModel.detectedCards,
+                handResult: viewModel.currentHandResult,
+                frameSize: geometry.size
+              )
+            }
+          }
         }
         .edgesIgnoringSafeArea(.all)
       } else {
@@ -106,6 +117,9 @@ struct ControlsView: View {
       CircleButton(icon: "camera.fill", text: nil) {
         viewModel.capturePhoto()
       }
+      
+      // Poker detection toggle
+      PokerModeToggle(isEnabled: $viewModel.isPokerDetectionEnabled)
     }
   }
 }

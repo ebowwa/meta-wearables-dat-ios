@@ -34,6 +34,11 @@
 		E6DA451E2E79A63100E3F688 /* CardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6DA45172E79A63100E3F688 /* CardView.swift */; };
 		E6DA451F2E79A63100E3F688 /* MockDeviceKitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6DA451A2E79A63100E3F688 /* MockDeviceKitView.swift */; };
 		E6FD3BCE2EB4D53A00E7FE5D /* NonStreamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6FD3BCD2EB4D53A00E7FE5D /* NonStreamView.swift */; };
+		AA0000012F00000000000001 /* PokerCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000022F00000000000001 /* PokerCard.swift */; };
+		AA0000032F00000000000002 /* PokerHandAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000042F00000000000002 /* PokerHandAnalyzer.swift */; };
+		AA0000052F00000000000003 /* PokerDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000062F00000000000003 /* PokerDetectionService.swift */; };
+		AA0000072F00000000000004 /* PokerDetectionOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000082F00000000000004 /* PokerDetectionOverlay.swift */; };
+		AA00000C2F00000000000008 /* YOLO11PokerInt8LUT.mlpackage in Resources */ = {isa = PBXBuildFile; fileRef = AA00000B2F00000000000007 /* YOLO11PokerInt8LUT.mlpackage */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -88,6 +93,11 @@
 		E6DA45182E79A63100E3F688 /* MockDeviceCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDeviceCardView.swift; sourceTree = "<group>"; };
 		E6DA451A2E79A63100E3F688 /* MockDeviceKitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDeviceKitView.swift; sourceTree = "<group>"; };
 		E6FD3BCD2EB4D53A00E7FE5D /* NonStreamView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NonStreamView.swift; sourceTree = "<group>"; };
+		AA0000022F00000000000001 /* PokerCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokerCard.swift; sourceTree = "<group>"; };
+		AA0000042F00000000000002 /* PokerHandAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokerHandAnalyzer.swift; sourceTree = "<group>"; };
+		AA0000062F00000000000003 /* PokerDetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokerDetectionService.swift; sourceTree = "<group>"; };
+		AA0000082F00000000000004 /* PokerDetectionOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokerDetectionOverlay.swift; sourceTree = "<group>"; };
+		AA00000B2F00000000000007 /* YOLO11PokerInt8LUT.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = YOLO11PokerInt8LUT.mlpackage; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -165,6 +175,8 @@
 		8FD96B7D2E6F0A9800F56AB1 /* CameraAccess */ = {
 			isa = PBXGroup;
 			children = (
+				AA0000092F00000000000005 /* Models */,
+				AA00000A2F00000000000006 /* Services */,
 				8FD96B702E6F0A9800F56AB1 /* ViewModels */,
 				8FD96B762E6F0A9800F56AB1 /* Views */,
 				8FFD5FF82E8422B60035E446 /* Utils */,
@@ -172,6 +184,7 @@
 				8FD96B782E6F0A9800F56AB1 /* CameraAccess.entitlements */,
 				8FD96B792E6F0A9800F56AB1 /* CameraAccessApp.swift */,
 				8FD96B7B2E6F0A9800F56AB1 /* Info.plist */,
+				AA00000B2F00000000000007 /* YOLO11PokerInt8LUT.mlpackage */,
 			);
 			path = CameraAccess;
 			sourceTree = "<group>";
@@ -184,6 +197,7 @@
 				8FFD5FF22E8422580035E446 /* CircleButton.swift */,
 				8FFD5FF32E8422580035E446 /* CustomButton.swift */,
 				E6DA45172E79A63100E3F688 /* CardView.swift */,
+				AA0000082F00000000000004 /* PokerDetectionOverlay.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -213,6 +227,23 @@
 				E66D30232E7DA71900470B48 /* MockDeviceKitButton.swift */,
 			);
 			path = MockDeviceKit;
+			sourceTree = "<group>";
+		};
+		AA0000092F00000000000005 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000022F00000000000001 /* PokerCard.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		AA00000A2F00000000000006 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000042F00000000000002 /* PokerHandAnalyzer.swift */,
+				AA0000062F00000000000003 /* PokerDetectionService.swift */,
+			);
+			path = Services;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -304,6 +335,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8FD96B8D2E6F0A9800F56AB1 /* Assets.xcassets in Resources */,
+				AA00000C2F00000000000008 /* YOLO11PokerInt8LUT.mlpackage in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -344,6 +376,10 @@
 				8FFD5FF52E8422580035E446 /* CircleButton.swift in Sources */,
 				8FFD5FF62E8422580035E446 /* CustomButton.swift in Sources */,
 				E6FD3BCE2EB4D53A00E7FE5D /* NonStreamView.swift in Sources */,
+				AA0000012F00000000000001 /* PokerCard.swift in Sources */,
+				AA0000032F00000000000002 /* PokerHandAnalyzer.swift in Sources */,
+				AA0000052F00000000000003 /* PokerDetectionService.swift in Sources */,
+				AA0000072F00000000000004 /* PokerDetectionOverlay.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

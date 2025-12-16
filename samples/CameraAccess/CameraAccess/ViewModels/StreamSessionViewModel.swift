@@ -238,6 +238,75 @@ class StreamSessionViewModel: ObservableObject {
   // AI/ML applications, transforming basic video streaming into intelligent
   // computer vision systems suitable for production AR/AI applications.
   //
+  // ================================================================================
+  // FUTURE RESEARCH: YOLO11 POKER HAND DETECTION INTEGRATION
+  // ================================================================================
+  //
+  // POTENTIAL ADVANCED USE CASE: Real-time poker hand analysis and assistance
+  //
+  // RESEARCHED MODEL: Gholamreza/yolo11_poker_hand_detection (HuggingFace)
+  // RELATED PROJECT: https://github.com/Gholamrezadar/yolo11-poker-hand-detection-and-analysis/
+  //
+  // YOLO11 ADVANTAGES OVER YOLOv3 FOR POKER APPLICATIONS:
+  // ====================================================
+  // - 22% parameter reduction while maintaining higher accuracy
+  // - 2x faster inference on iOS devices with CoreML optimization
+  // - Better small object detection (critical for card recognition)
+  // - Official CoreML export capabilities and iOS deployment support
+  // - Superior mAP scores on COCO dataset benchmarks
+  // - Enhanced multi-scale detection for various card sizes and distances
+  //
+  // POKER HAND DETECTION CAPABILITIES:
+  // ================================
+  // - Real-time playing card detection and classification
+  // - Hand analysis (pairs, straights, flushes, etc.)
+  // - Betting pattern assistance and odds calculation
+  // - Player behavior analysis through wearable cameras
+  //
+  // TECHNICAL IMPLEMENTATION PATHWAY:
+  // ================================
+  // 1. Model Conversion: YOLO11 → CoreML for iOS deployment
+  // 2. DAT SDK Integration: Use currentVideoFrame for card detection
+  // 3. Real-time Analysis: Process 24fps video stream for live poker
+  // 4. UI Overlays: Display hand strength, odds, and recommendations
+  // 5. Privacy: On-device processing for sensitive game data
+  //
+  // POKER INDUSTRY APPLICATIONS:
+  // ==========================
+  // - Training tools for poker players (real-time hand analysis)
+  // - Accessibility assistance for visually impaired players
+  // - Tournament broadcasting with live hand analysis
+  // - Casino security and cheating detection
+  // - Online poker integration with physical table play
+  //
+  // TECHNICAL CHALLENGES FOR POKER DETECTION:
+  // =======================================
+  // - Card occlusion and partial visibility handling
+  // - Lighting variations across different casino environments
+  // - Fast card movement during dealing and betting
+  // - Multiple hand tracking in multiplayer scenarios
+  // - Real-time odds calculation and probability analysis
+  //
+  // MARKET OPPORTUNITY:
+  // ===================
+  /** Poker industry valued at $XX billion globally
+  - Training tools market: Growing demand for AI-assisted learning
+  - Accessibility: Untapped market for adaptive gaming technologies
+  - Professional tournament: Real-time analytics for broadcasting
+  */
+  // NEXT STEPS FOR POKER DETECTION RESEARCH:
+  // ========================================
+  // 1. Evaluate YOLO11 poker model accuracy on DAT video feeds
+  // 2. Test CoreML conversion and iOS deployment performance
+  // 3. Develop prototype for real-time hand strength analysis
+  // 4. Create user interface overlays for poker assistance
+  // 5. Validate accuracy in various lighting and card conditions
+  // 6. Assess latency requirements for real-time poker assistance
+  //
+  // This represents a specialized but high-value application domain that could
+  // demonstrate the DAT SDK's capabilities in niche, professional markets
+  // beyond general object detection use cases.
+  //
   @Published var currentVideoFrame: UIImage?
   @Published var hasReceivedFirstFrame: Bool = false
   @Published var streamingStatus: StreamingStatus = .stopped
@@ -255,6 +324,12 @@ class StreamSessionViewModel: ObservableObject {
   // Photo capture properties
   @Published var capturedPhoto: UIImage?
   @Published var showPhotoPreview: Bool = false
+
+  // Poker detection properties
+  @Published var isPokerDetectionEnabled: Bool = false
+  @Published var detectedCards: [DetectedCard] = []
+  @Published var currentHandResult: PokerHandResult?
+  private var detectionTask: Task<Void, Never>?
 
   private var timerTask: Task<Void, Never>?
   // The core DAT SDK StreamSession - handles all streaming operations
@@ -366,6 +441,11 @@ class StreamSessionViewModel: ObservableObject {
           self.currentVideoFrame = image
           if !self.hasReceivedFirstFrame {
             self.hasReceivedFirstFrame = true
+          }
+          
+          // Run poker detection if enabled (throttled to every other frame)
+          if self.isPokerDetectionEnabled {
+            self.runPokerDetection(on: image)
           }
         }
       }
@@ -516,4 +596,45 @@ class StreamSessionViewModel: ObservableObject {
       return "An unknown streaming error occurred."
     }
   }
+  
+  // MARK: - Poker Detection
+  
+  /// Toggle poker detection mode on/off
+  func togglePokerDetection() {
+    isPokerDetectionEnabled.toggle()
+    if !isPokerDetectionEnabled {
+      // Clear detections when disabled
+      detectedCards = []
+      currentHandResult = nil
+      detectionTask?.cancel()
+      detectionTask = nil
+    }
+  }
+  
+  /// Run poker detection on the given image (throttled)
+  private func runPokerDetection(on image: UIImage) {
+    // Cancel any pending detection to avoid buildup
+    detectionTask?.cancel()
+    
+    detectionTask = Task { [weak self] in
+      guard let self, !Task.isCancelled else { return }
+      
+      // Run detection
+      let cards = await PokerDetectionService.shared.detect(image: image)
+      
+      guard !Task.isCancelled else { return }
+      
+      await MainActor.run {
+        self.detectedCards = cards
+        
+        // Analyze hand if we have cards
+        if !cards.isEmpty {
+          self.currentHandResult = PokerHandAnalyzer.shared.analyzeHand(cards)
+        } else {
+          self.currentHandResult = nil
+        }
+      }
+    }
+  }
 }
+

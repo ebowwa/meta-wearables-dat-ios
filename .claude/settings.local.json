@@ -3,7 +3,9 @@
     "allow": [
       "Bash(swift:*)",
       "Bash(nm:*)",
-      "Bash(cut:*)"
+      "Bash(cut:*)",
+      "Bash(./run_conversion.sh)",
+      "Bash(uv run python:*)"
     ]
   }
 }
