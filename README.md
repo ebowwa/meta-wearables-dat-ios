@@ -1,5 +1,8 @@
 # Meta Wearables Device Access Toolkit for iOS
 
+> Hey this is Meta's DAT Smart Glasses SDK. In Dec 2025 i am tinkering on this and i encourage others to do the same and also encourage people to look at the included branches ([yolo branch](https://github.com/ebowwa/meta-wearables-dat-ios/tree/feature/yolo11-poker-detection)).
+
+
 [![Swift Package](https://img.shields.io/badge/Swift_Package-0.2.1-brightgreen?logo=swift&logoColor=white)](https://github.com/facebook/meta-wearables-dat-ios/tags)
 [![Docs](https://img.shields.io/badge/API_Reference-0.2-blue?logo=meta)](https://wearables.developer.meta.com/docs/reference/ios_swift/dat/0.2)
 
