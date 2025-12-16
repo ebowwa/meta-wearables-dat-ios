@@ -9,6 +9,15 @@ By integrating this SDK, developers can reliably connect to Meta's AI glasses an
 The Wearables Device Access Toolkit is in developer preview.
 Developers can access our SDK and documentation, test on supported AI glasses, and create organizations and release channels to share with test users.
 
+## Repository Structure
+
+This repository contains:
+
+- **MWDATCore.xcframework**: Core SDK for device connectivity and basic functionality
+- **MWDATCamera.xcframework**: Camera module for video streaming and photo capture
+- **MWDATMockDevice.xcframework**: Mock device support for development and testing (debug builds only)
+- **samples/CameraAccess**: Complete sample app demonstrating SDK integration
+
 ## Documentation & Community
 
 Find our full [developer documentation](https://wearables.developer.meta.com/docs/develop/) on the Wearables Developer Center.
@@ -23,6 +32,8 @@ See the [changelog](CHANGELOG.md) for the latest updates.
 
 ## Including the SDK in your project
 
+### Option 1: Swift Package Manager (Recommended)
+
 The easiest way to add the SDK to your project is by using Swift Package Manager.
 
 1. In Xcode, select **File** > **Add Package Dependencies...**
@@ -32,6 +43,25 @@ The easiest way to add the SDK to your project is by using Swift Package Manager
 1. Click **Add Package**
 1. Select the target to which you want to add the packages
 1. Click **Add Package**
+
+### Option 2: Manual Framework Integration
+
+If you prefer to integrate the frameworks manually:
+
+1. Clone this repository or download the source
+1. Drag the required `.xcframework` files into your Xcode project:
+   - `MWDATCore.xcframework` (required)
+   - `MWDATCamera.xcframework` (for camera functionality)
+   - `MWDATMockDevice.xcframework` (for development/testing only)
+1. Ensure the frameworks are added to your app target's "Frameworks, Libraries, and Embedded Content" section
+1. Import the modules in your Swift code:
+   ```swift
+   import MWDATCore
+   import MWDATCamera
+   #if DEBUG
+   import MWDATMockDevice
+   #endif
+   ```
 
 ## Developer Terms
 
