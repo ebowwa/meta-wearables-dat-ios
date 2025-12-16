@@ -17,7 +17,17 @@ import SwiftUI
 struct CircleButton: View {
   let icon: String
   let text: String?
+  let backgroundColor: Color
+  let foregroundColor: Color
   let action: () -> Void
+
+  init(icon: String, text: String? = nil, backgroundColor: Color = .white, foregroundColor: Color = .black, action: @escaping () -> Void) {
+    self.icon = icon
+    self.text = text
+    self.backgroundColor = backgroundColor
+    self.foregroundColor = foregroundColor
+    self.action = action
+  }
 
   var body: some View {
     Button(action: action) {
@@ -33,9 +43,9 @@ struct CircleButton: View {
           .font(.system(size: 16))
       }
     }
-    .foregroundColor(.black)
+    .foregroundColor(foregroundColor)
     .frame(width: 56, height: 56)
-    .background(.white)
+    .background(backgroundColor)
     .clipShape(Circle())
   }
 }

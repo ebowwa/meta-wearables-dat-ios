@@ -142,9 +142,18 @@ struct ControlsView: View {
       }
       
       // Model picker button
-      CircleButton(icon: "brain", text: nil) {
-        viewModel.showModelPicker = true
+      // YOLO Detection Toggle (Tap) / Model Picker (Long Press)
+      CircleButton(
+        icon: "brain",
+        text: nil,
+        backgroundColor: viewModel.isDetectionEnabled ? .appPrimary : .white,
+        foregroundColor: viewModel.isDetectionEnabled ? .white : .black
+      ) {
+        viewModel.toggleDetection()
       }
+      .simultaneousGesture(LongPressGesture().onEnded { _ in
+        viewModel.showModelPicker = true
+      })
     }
   }
 }

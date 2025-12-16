@@ -17,22 +17,7 @@ struct ModelPickerView: View {
     var body: some View {
         NavigationView {
             List {
-                // Active Model Section
-                if let active = modelManager.activeModel {
-                    Section("Active Model") {
-                        ModelRowView(
-                            model: active,
-                            downloadState: .downloaded,
-                            isActive: true,
-                            onSelect: {},
-                            onDownload: {},
-                            onDelete: {}
-                        )
-                    }
-                }
-                
-                // Available Models Section
-                Section("Available Models") {
+                Section {
                     ForEach(modelManager.availableModels) { model in
                         let state = modelManager.downloadStates[model.id] ?? .notDownloaded
                         let isActive = modelManager.activeModel?.id == model.id
@@ -56,18 +41,23 @@ struct ModelPickerView: View {
                             }
                         )
                     }
-                }
-                
-                // Add Remote Model
-                Section {
-                    Button(action: { showAddRemoteModel = true }) {
-                        Label("Add Model from URL", systemImage: "plus.circle")
+                } header: {
+                    Text("Models")
+                } footer: {
+                    if modelManager.availableModels.isEmpty {
+                        Text("No models available. Add one from the cloud.")
                     }
                 }
             }
+            .listStyle(.insetGrouped)
             .navigationTitle("YOLO Models")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { showAddRemoteModel = true }) {
+                        Image(systemName: "plus")
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") { dismiss() }
                 }
@@ -143,6 +133,13 @@ struct ModelRowView: View {
             actionButton
         }
         .padding(.vertical, 4)
+        .swipeActions(edge: .trailing) {
+            if case .local = model.source {
+                Button(role: .destructive, action: onDelete) {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+        }
     }
     
     @ViewBuilder
