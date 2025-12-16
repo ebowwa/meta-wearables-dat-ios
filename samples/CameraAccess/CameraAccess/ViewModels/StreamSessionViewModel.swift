@@ -257,6 +257,11 @@ class StreamSessionViewModel: ObservableObject {
   @Published var capturedPhoto: UIImage?
   @Published var showPhotoPreview: Bool = false
 
+  // Race classification properties
+  @Published var isRaceClassificationEnabled: Bool = false
+  @Published var currentClassification: ClassifiedFace?
+  private var classificationTask: Task<Void, Never>?
+
   private var timerTask: Task<Void, Never>?
   // The core DAT SDK StreamSession - handles all streaming operations
   private var streamSession: StreamSession
@@ -469,6 +474,39 @@ class StreamSessionViewModel: ObservableObject {
   func dismissPhotoPreview() {
     showPhotoPreview = false
     capturedPhoto = nil
+  }
+
+  // MARK: - Race Classification
+
+  func toggleRaceClassification() {
+    isRaceClassificationEnabled.toggle()
+    if isRaceClassificationEnabled {
+      startClassificationLoop()
+    } else {
+      stopClassificationLoop()
+    }
+  }
+
+  private func startClassificationLoop() {
+    stopClassificationLoop()
+    classificationTask = Task { @MainActor [weak self] in
+      while let self, isRaceClassificationEnabled, !Task.isCancelled {
+        if let frame = currentVideoFrame {
+          let result = await RaceClassificationService.shared.classify(image: frame)
+          if !Task.isCancelled {
+            self.currentClassification = result
+          }
+        }
+        // Run at ~4 fps for classification (250ms interval)
+        try? await Task.sleep(nanoseconds: 250_000_000)
+      }
+    }
+  }
+
+  private func stopClassificationLoop() {
+    classificationTask?.cancel()
+    classificationTask = nil
+    currentClassification = nil
   }
 
   private func startTimer() {

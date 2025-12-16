@@ -34,6 +34,9 @@
 		E6DA451E2E79A63100E3F688 /* CardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6DA45172E79A63100E3F688 /* CardView.swift */; };
 		E6DA451F2E79A63100E3F688 /* MockDeviceKitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6DA451A2E79A63100E3F688 /* MockDeviceKitView.swift */; };
 		E6FD3BCE2EB4D53A00E7FE5D /* NonStreamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6FD3BCD2EB4D53A00E7FE5D /* NonStreamView.swift */; };
+		F1A1A1A12F00000100000001 /* RaceClassification.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A1A1A12F00000100000002 /* RaceClassification.swift */; };
+		F1A1A1A12F00000100000003 /* RaceClassificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A1A1A12F00000100000004 /* RaceClassificationService.swift */; };
+		F1A1A1A12F00000100000005 /* RaceClassificationOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A1A1A12F00000100000006 /* RaceClassificationOverlay.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -88,6 +91,10 @@
 		E6DA45182E79A63100E3F688 /* MockDeviceCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDeviceCardView.swift; sourceTree = "<group>"; };
 		E6DA451A2E79A63100E3F688 /* MockDeviceKitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDeviceKitView.swift; sourceTree = "<group>"; };
 		E6FD3BCD2EB4D53A00E7FE5D /* NonStreamView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NonStreamView.swift; sourceTree = "<group>"; };
+		F1A1A1A12F00000100000002 /* RaceClassification.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceClassification.swift; sourceTree = "<group>"; };
+		F1A1A1A12F00000100000004 /* RaceClassificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceClassificationService.swift; sourceTree = "<group>"; };
+		F1A1A1A12F00000100000006 /* RaceClassificationOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceClassificationOverlay.swift; sourceTree = "<group>"; };
+		F1A1A1A12F00000100000007 /* Race-CLS-FairFace_yolov8n.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = "Race-CLS-FairFace_yolov8n.mlpackage"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -165,6 +172,8 @@
 		8FD96B7D2E6F0A9800F56AB1 /* CameraAccess */ = {
 			isa = PBXGroup;
 			children = (
+				F1A1A1A12F00000100000008 /* Models */,
+				F1A1A1A12F00000100000009 /* Services */,
 				8FD96B702E6F0A9800F56AB1 /* ViewModels */,
 				8FD96B762E6F0A9800F56AB1 /* Views */,
 				8FFD5FF82E8422B60035E446 /* Utils */,
@@ -172,6 +181,7 @@
 				8FD96B782E6F0A9800F56AB1 /* CameraAccess.entitlements */,
 				8FD96B792E6F0A9800F56AB1 /* CameraAccessApp.swift */,
 				8FD96B7B2E6F0A9800F56AB1 /* Info.plist */,
+				F1A1A1A12F00000100000007 /* Race-CLS-FairFace_yolov8n.mlpackage */,
 			);
 			path = CameraAccess;
 			sourceTree = "<group>";
@@ -184,8 +194,25 @@
 				8FFD5FF22E8422580035E446 /* CircleButton.swift */,
 				8FFD5FF32E8422580035E446 /* CustomButton.swift */,
 				E6DA45172E79A63100E3F688 /* CardView.swift */,
+				F1A1A1A12F00000100000006 /* RaceClassificationOverlay.swift */,
 			);
 			path = Components;
+			sourceTree = "<group>";
+		};
+		F1A1A1A12F00000100000008 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				F1A1A1A12F00000100000002 /* RaceClassification.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		F1A1A1A12F00000100000009 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				F1A1A1A12F00000100000004 /* RaceClassificationService.swift */,
+			);
+			path = Services;
 			sourceTree = "<group>";
 		};
 		8FFD5FF82E8422B60035E446 /* Utils */ = {
@@ -344,6 +371,9 @@
 				8FFD5FF52E8422580035E446 /* CircleButton.swift in Sources */,
 				8FFD5FF62E8422580035E446 /* CustomButton.swift in Sources */,
 				E6FD3BCE2EB4D53A00E7FE5D /* NonStreamView.swift in Sources */,
+				F1A1A1A12F00000100000001 /* RaceClassification.swift in Sources */,
+				F1A1A1A12F00000100000003 /* RaceClassificationService.swift in Sources */,
+				F1A1A1A12F00000100000005 /* RaceClassificationOverlay.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

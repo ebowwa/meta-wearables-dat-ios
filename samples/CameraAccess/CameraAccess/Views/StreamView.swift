@@ -43,6 +43,16 @@ struct StreamView: View {
           .foregroundColor(.white)
       }
 
+      // Race classification overlay
+      if viewModel.hasReceivedFirstFrame {
+        GeometryReader { geometry in
+          RaceClassificationOverlay(
+            classification: viewModel.currentClassification,
+            isEnabled: viewModel.isRaceClassificationEnabled
+          )
+        }
+      }
+
       // Bottom controls layer
 
       VStack {
@@ -105,6 +115,22 @@ struct ControlsView: View {
         let nextTimeLimit = viewModel.activeTimeLimit.next
         viewModel.setTimeLimit(nextTimeLimit)
       }
+
+      // Race classification toggle
+      Button(action: {
+        viewModel.toggleRaceClassification()
+      }) {
+        ZStack {
+          Circle()
+            .fill(viewModel.isRaceClassificationEnabled ? Color.purple : Color.gray.opacity(0.6))
+            .frame(width: 44, height: 44)
+          
+          Image(systemName: "person.crop.circle.badge.checkmark")
+            .font(.system(size: 18))
+            .foregroundColor(.white)
+        }
+      }
+      .accessibilityLabel(viewModel.isRaceClassificationEnabled ? "Disable race classification" : "Enable race classification")
 
       // Photo button
       CircleButton(icon: "camera.fill", text: nil) {
