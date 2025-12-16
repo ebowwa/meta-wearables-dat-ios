@@ -151,21 +151,45 @@ class YOLOModelManager: ObservableObject {
         do {
             let (tempURL, _) = try await URLSession.shared.download(from: url)
             
-            // Move to models directory
+            // Files from URLSession often lack extensions, but MLModel.compileModel needs them.
+            // Create a temporary URL with the correct extension.
+            let ext = url.pathExtension
+            let tempWithExtURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension(ext.isEmpty ? "mlmodel" : ext)
+            
+            try FileManager.default.moveItem(at: tempURL, to: tempWithExtURL)
+            
+            defer {
+                try? FileManager.default.removeItem(at: tempWithExtURL)
+            }
+            
+            // Destination URL for the compiled model
             let destURL = modelsDirectoryURL.appendingPathComponent("\(model.id).mlmodelc")
             
-            // If it's a .mlpackage, compile it first
-            if url.pathExtension == "mlpackage" {
-                let compiledURL = try await compileModel(at: tempURL)
+            // Compile logic
+            if ext == "mlmodel" || ext == "mlpackage" || ext.isEmpty {
+                let compiledURL = try await compileModel(at: tempWithExtURL)
+                
+                // If destination exists, remove it first
+                if FileManager.default.fileExists(atPath: destURL.path) {
+                    try FileManager.default.removeItem(at: destURL)
+                }
+                
                 try FileManager.default.moveItem(at: compiledURL, to: destURL)
+            } else if ext == "mlmodelc" {
+                // Already compiled (unlikely for single file download unless zipped, handling basics)
+                if FileManager.default.fileExists(atPath: destURL.path) {
+                    try FileManager.default.removeItem(at: destURL)
+                }
+                try FileManager.default.moveItem(at: tempWithExtURL, to: destURL)
             } else {
-                try FileManager.default.moveItem(at: tempURL, to: destURL)
+                throw YOLOModelError.loadFailed(underlying: NSError(domain: "YOLOModelManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unsupported model extension: \(ext)"]))
             }
             
             downloadStates[model.id] = .downloaded
             await discoverModels()
             
         } catch {
+            print("Download failed: \(error)")
             downloadStates[model.id] = .failed(error: error.localizedDescription)
         }
     }
@@ -230,28 +254,59 @@ class YOLOModelManager: ObservableObject {
     // MARK: - Model Deletion
     
     func deleteModel(_ model: YOLOModelInfo) {
-        guard case .local(let path) = model.source else { return }
-        
-        try? FileManager.default.removeItem(atPath: path)
-        
+        // Remove from active model if this is the active one
         if activeModel?.id == model.id {
             activeModel = nil
             loadedVisionModel = nil
         }
         
-        Task {
-            await discoverModels()
+        // Remove the local file if it exists
+        if case .local(let path) = model.source {
+            try? FileManager.default.removeItem(atPath: path)
         }
+        
+        // Also check the YOLOModels directory for any compiled version
+        let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let modelsDir = documentsURL.appendingPathComponent("YOLOModels", isDirectory: true)
+        let potentialCompiledPath = modelsDir.appendingPathComponent("\(model.id).mlmodelc")
+        if FileManager.default.fileExists(atPath: potentialCompiledPath.path) {
+            try? FileManager.default.removeItem(at: potentialCompiledPath)
+        }
+        
+        // Remove from availableModels synchronously (prevents SwiftUI animation conflict)
+        availableModels.removeAll { $0.id == model.id }
+        
+        // Clean up download state
+        downloadStates.removeValue(forKey: model.id)
     }
     
     // MARK: - Add Remote Model by URL
     
     func addRemoteModel(name: String, url: URL) {
+        // Sanitize URL for GitHub
+        var processedURL = url
+        if let host = url.host, host.contains("github.com") {
+            // Check if it's likely a blob URL (standard browser view)
+            if !url.absoluteString.contains("?raw=true") && !url.absoluteString.contains("raw.githubusercontent.com") {
+                 if var components = URLComponents(url: url, resolvingAgainstBaseURL: true) {
+                    var queryItems = components.queryItems ?? []
+                    queryItems.append(URLQueryItem(name: "raw", value: "true"))
+                    components.queryItems = queryItems
+                    if let newURL = components.url {
+                        processedURL = newURL
+                    }
+                }
+            }
+        }
+        
+        // Sanitize name if empty or default
+        let finalName = name.isEmpty ? processedURL.lastPathComponent.replacingOccurrences(of: ".mlpackage", with: "").replacingOccurrences(of: ".mlmodelc", with: "") : name
+
         let model = YOLOModelInfo(
             id: "remote_\(UUID().uuidString.prefix(8))",
-            name: name,
-            description: "Cloud model from \(url.host ?? "unknown")",
-            source: .remote(url: url.absoluteString),
+            name: finalName,
+            description: "Cloud model from \(processedURL.host ?? "unknown")",
+            source: .remote(url: processedURL.absoluteString),
             version: "1.0"
         )
         
