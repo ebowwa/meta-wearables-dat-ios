@@ -4,11 +4,18 @@ This guide explains how to convert machines learning models (YOLO, PyTorch, ONNX
 
 ## 1. Prerequisites
 
-You need a Mac with Xcode installed and a Python environment.
+You need a Mac with Xcode installed and a Python environment. We strongly recommend using **uv** for fast and reliable dependency management.
 
 ```bash
-# Install coremltools
-pip install coremltools ultralytics
+# Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create and activate a virtual environment
+uv venv
+source .venv/bin/activate
+
+# Install coremltools and ultralytics using uv
+uv pip install coremltools ultralytics
 ```
 
 ## 2. Convert Model to CoreML
