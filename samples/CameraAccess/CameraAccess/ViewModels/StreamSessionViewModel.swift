@@ -257,6 +257,17 @@ class StreamSessionViewModel: ObservableObject {
   @Published var capturedPhoto: UIImage?
   @Published var showPhotoPreview: Bool = false
 
+  // YOLO Detection properties
+  @Published var showModelPicker: Bool = false
+  let modelManager = YOLOModelManager()
+  let detectionService = YOLODetectionService()
+  @Published var currentDetections: [YOLODetection] = []
+  
+  var isDetectionEnabled: Bool {
+    get { detectionService.isEnabled }
+    set { detectionService.isEnabled = newValue }
+  }
+
   private var timerTask: Task<Void, Never>?
   // The core DAT SDK StreamSession - handles all streaming operations
   private var streamSession: StreamSession
@@ -376,6 +387,12 @@ class StreamSessionViewModel: ObservableObject {
           self.currentVideoFrame = image
           if !self.hasReceivedFirstFrame {
             self.hasReceivedFirstFrame = true
+          }
+          
+          // Run YOLO detection if enabled
+          if self.detectionService.isEnabled && self.detectionService.hasModel {
+            let detections = await self.detectionService.detect(in: image)
+            self.currentDetections = detections
           }
         }
       }
@@ -520,6 +537,42 @@ class StreamSessionViewModel: ObservableObject {
       return "Camera permission denied. Please grant permission in Settings."
     @unknown default:
       return "An unknown streaming error occurred."
+    }
+  }
+  
+  // MARK: - YOLO Detection
+  
+  /// Load the bundled YOLOv3 model
+  func loadDefaultYOLOModel() async {
+    // Look for bundled YOLOv3 model
+    await modelManager.discoverModels()
+    if let yoloModel = modelManager.availableModels.first(where: { $0.name.contains("YOLO") || $0.name.contains("yolo") }) {
+      do {
+        try await modelManager.loadModel(yoloModel)
+        if let visionModel = modelManager.loadedVisionModel {
+          detectionService.setModel(visionModel)
+        }
+      } catch {
+        showError("Failed to load YOLO model: \(error.localizedDescription)")
+      }
+    }
+  }
+  
+  /// Toggle YOLO detection on/off
+  func toggleDetection() {
+    if !detectionService.hasModel {
+      // Try to load default model first
+      Task {
+        await loadDefaultYOLOModel()
+        if detectionService.hasModel {
+          detectionService.isEnabled = true
+        }
+      }
+    } else {
+      detectionService.isEnabled.toggle()
+      if !detectionService.isEnabled {
+        currentDetections = []
+      }
     }
   }
 }

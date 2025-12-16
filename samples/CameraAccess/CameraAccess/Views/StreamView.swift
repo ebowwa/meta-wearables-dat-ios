@@ -30,11 +30,21 @@ struct StreamView: View {
       // Video backdrop
       if let videoFrame = viewModel.currentVideoFrame, viewModel.hasReceivedFirstFrame {
         GeometryReader { geometry in
-          Image(uiImage: videoFrame)
-            .resizable()
-            .aspectRatio(contentMode: .fill)
-            .frame(width: geometry.size.width, height: geometry.size.height)
-            .clipped()
+          ZStack {
+            Image(uiImage: videoFrame)
+              .resizable()
+              .aspectRatio(contentMode: .fill)
+              .frame(width: geometry.size.width, height: geometry.size.height)
+              .clipped()
+            
+            // YOLO Detection overlay
+            if viewModel.isDetectionEnabled && !viewModel.currentDetections.isEmpty {
+              DetectionOverlayView(
+                detections: viewModel.currentDetections,
+                viewSize: geometry.size
+              )
+            }
+          }
         }
         .edgesIgnoringSafeArea(.all)
       } else {
@@ -42,14 +52,30 @@ struct StreamView: View {
           .scaleEffect(1.5)
           .foregroundColor(.white)
       }
+      
+      // Detection stats (top-left)
+      if viewModel.isDetectionEnabled {
+        VStack {
+          HStack {
+            DetectionStatsView(
+              inferenceTimeMs: viewModel.detectionService.inferenceTimeMs,
+              detectionCount: viewModel.currentDetections.count,
+              modelName: viewModel.modelManager.activeModel?.name
+            )
+            Spacer()
+          }
+          .padding()
+          Spacer()
+        }
+      }
 
       // Bottom controls layer
-
       VStack {
         Spacer()
         ControlsView(viewModel: viewModel)
       }
       .padding(.all, 24)
+      
       // Timer display area with fixed height
       VStack {
         Spacer()
@@ -77,6 +103,10 @@ struct StreamView: View {
           }
         )
       }
+    }
+    // Model picker sheet
+    .sheet(isPresented: $viewModel.showModelPicker) {
+      ModelPickerView(modelManager: viewModel.modelManager)
     }
   }
 }
@@ -110,6 +140,20 @@ struct ControlsView: View {
       CircleButton(icon: "camera.fill", text: nil) {
         viewModel.capturePhoto()
       }
+      
+      // YOLO Detection toggle
+      CircleButton(
+        icon: viewModel.isDetectionEnabled ? "eye.fill" : "eye.slash",
+        text: viewModel.isDetectionEnabled ? "AI" : nil
+      ) {
+        viewModel.toggleDetection()
+      }
+      
+      // Model picker button
+      CircleButton(icon: "brain", text: nil) {
+        viewModel.showModelPicker = true
+      }
     }
   }
 }
+

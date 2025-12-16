@@ -35,6 +35,11 @@
 		E6DA451F2E79A63100E3F688 /* MockDeviceKitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6DA451A2E79A63100E3F688 /* MockDeviceKitView.swift */; };
 		E6FD3BCE2EB4D53A00E7FE5D /* NonStreamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6FD3BCD2EB4D53A00E7FE5D /* NonStreamView.swift */; };
 		YOLO3A3A3A3A3A3A3A3A3A3A /* YOLOv3Int8LUT.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = YOLO3F3F3F3F3F3F3F3F3F3F /* YOLOv3Int8LUT.mlmodel */; };
+		YOLO1111111111111111 /* YOLOModelInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = YOLO2222222222222222 /* YOLOModelInfo.swift */; };
+		YOLO3333333333333333 /* YOLOModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = YOLO4444444444444444 /* YOLOModelManager.swift */; };
+		YOLO5555555555555555 /* YOLODetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = YOLO6666666666666666 /* YOLODetectionService.swift */; };
+		YOLO7777777777777777 /* ModelPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = YOLO8888888888888888 /* ModelPickerView.swift */; };
+		YOLO9999999999999999 /* DetectionOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = YOLOAAAAAAAAAAAAAAAA /* DetectionOverlayView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -90,6 +95,11 @@
 		E6DA451A2E79A63100E3F688 /* MockDeviceKitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDeviceKitView.swift; sourceTree = "<group>"; };
 		E6FD3BCD2EB4D53A00E7FE5D /* NonStreamView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NonStreamView.swift; sourceTree = "<group>"; };
 		YOLO3F3F3F3F3F3F3F3F3F3F /* YOLOv3Int8LUT.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = YOLOv3Int8LUT.mlmodel; sourceTree = "<group>"; };
+		YOLO2222222222222222 /* YOLOModelInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YOLOModelInfo.swift; sourceTree = "<group>"; };
+		YOLO4444444444444444 /* YOLOModelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YOLOModelManager.swift; sourceTree = "<group>"; };
+		YOLO6666666666666666 /* YOLODetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YOLODetectionService.swift; sourceTree = "<group>"; };
+		YOLO8888888888888888 /* ModelPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelPickerView.swift; sourceTree = "<group>"; };
+		YOLOAAAAAAAAAAAAAAAA /* DetectionOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectionOverlayView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -167,6 +177,8 @@
 		8FD96B7D2E6F0A9800F56AB1 /* CameraAccess */ = {
 			isa = PBXGroup;
 			children = (
+				YOLOBBBBBBBBBBBBBBBB /* Models */,
+				YOLOCCCCCCCCCCCCCCCC /* Services */,
 				8FD96B702E6F0A9800F56AB1 /* ViewModels */,
 				8FD96B762E6F0A9800F56AB1 /* Views */,
 				8FFD5FF82E8422B60035E446 /* Utils */,
@@ -179,6 +191,23 @@
 			path = CameraAccess;
 			sourceTree = "<group>";
 		};
+		YOLOBBBBBBBBBBBBBBBB /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				YOLO2222222222222222 /* YOLOModelInfo.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		YOLOCCCCCCCCCCCCCCCC /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				YOLO4444444444444444 /* YOLOModelManager.swift */,
+				YOLO6666666666666666 /* YOLODetectionService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
 		8FFD5FF42E8422580035E446 /* Components */ = {
 			isa = PBXGroup;
 			children = (
@@ -187,6 +216,8 @@
 				8FFD5FF22E8422580035E446 /* CircleButton.swift */,
 				8FFD5FF32E8422580035E446 /* CustomButton.swift */,
 				E6DA45172E79A63100E3F688 /* CardView.swift */,
+				YOLO8888888888888888 /* ModelPickerView.swift */,
+				YOLOAAAAAAAAAAAAAAAA /* DetectionOverlayView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -348,6 +379,11 @@
 				8FFD5FF62E8422580035E446 /* CustomButton.swift in Sources */,
 				E6FD3BCE2EB4D53A00E7FE5D /* NonStreamView.swift in Sources */,
 				YOLO3A3A3A3A3A3A3A3A3A3A /* YOLOv3Int8LUT.mlmodel in Sources */,
+				YOLO1111111111111111 /* YOLOModelInfo.swift in Sources */,
+				YOLO3333333333333333 /* YOLOModelManager.swift in Sources */,
+				YOLO5555555555555555 /* YOLODetectionService.swift in Sources */,
+				YOLO7777777777777777 /* ModelPickerView.swift in Sources */,
+				YOLO9999999999999999 /* DetectionOverlayView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

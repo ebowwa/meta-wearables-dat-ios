@@ -7,11 +7,11 @@
  */
 
 import Foundation
-import Vision
+@preconcurrency import Vision
 import UIKit
 
 /// A detected object from YOLO inference
-struct YOLODetection: Identifiable {
+struct YOLODetection: Identifiable, Sendable {
     let id = UUID()
     let label: String
     let confidence: Float
@@ -43,7 +43,6 @@ class YOLODetectionService: ObservableObject {
     // MARK: - Private Properties
     
     private var visionModel: VNCoreMLModel?
-    private var processingQueue = DispatchQueue(label: "yolo.detection", qos: .userInitiated)
     private var lastProcessTime: Date?
     private let minProcessingInterval: TimeInterval = 0.05  // 20 FPS max
     
@@ -77,14 +76,11 @@ class YOLODetectionService: ObservableObject {
         
         isProcessing = true
         let startTime = Date()
+        let threshold = confidenceThreshold
         
-        let detections = await withCheckedContinuation { continuation in
-            processingQueue.async { [weak self] in
-                guard let self else {
-                    continuation.resume(returning: [])
-                    return
-                }
-                
+        // Perform detection on background thread
+        let detections: [YOLODetection] = await withCheckedContinuation { continuation in
+            Task.detached {
                 let request = VNCoreMLRequest(model: visionModel) { request, error in
                     if let error = error {
                         print("YOLO Detection error: \(error)")
@@ -92,8 +88,8 @@ class YOLODetectionService: ObservableObject {
                         return
                     }
                     
-                    let detections = self.processResults(request.results, threshold: self.confidenceThreshold)
-                    continuation.resume(returning: detections)
+                    let results = Self.processResults(request.results, threshold: threshold)
+                    continuation.resume(returning: results)
                 }
                 
                 request.imageCropAndScaleOption = .scaleFill
@@ -117,7 +113,8 @@ class YOLODetectionService: ObservableObject {
         return detections
     }
     
-    private func processResults(_ results: [Any]?, threshold: Float) -> [YOLODetection] {
+    // Made static and nonisolated to avoid MainActor isolation issues
+    private nonisolated static func processResults(_ results: [Any]?, threshold: Float) -> [YOLODetection] {
         guard let observations = results as? [VNRecognizedObjectObservation] else {
             return []
         }
@@ -136,3 +133,4 @@ class YOLODetectionService: ObservableObject {
         }
     }
 }
+
