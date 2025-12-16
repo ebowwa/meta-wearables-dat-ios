@@ -32,6 +32,7 @@ struct NonStreamView: View {
             Button("Disconnect", role: .destructive) {
               wearablesVM.disconnectGlasses()
             }
+            .disabled(wearablesVM.registrationState != .registered)
           } label: {
             Image(systemName: "gearshape")
               .resizable()
@@ -64,10 +65,24 @@ struct NonStreamView: View {
 
         Spacer()
 
+        HStack(spacing: 8) {
+          Image(systemName: "hourglass")
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .foregroundColor(.white.opacity(0.7))
+            .frame(width: 16, height: 16)
+
+          Text("Waiting for an active device")
+            .font(.system(size: 14))
+            .foregroundColor(.white.opacity(0.7))
+        }
+        .padding(.bottom, 12)
+        .opacity(viewModel.hasActiveDevice ? 0 : 1)
+
         CustomButton(
           title: "Start streaming",
           style: .primary,
-          isDisabled: false
+          isDisabled: !viewModel.hasActiveDevice
         ) {
           Task {
             await viewModel.handleStartStreaming()

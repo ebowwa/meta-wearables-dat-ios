@@ -243,6 +243,7 @@ class StreamSessionViewModel: ObservableObject {
   @Published var streamingStatus: StreamingStatus = .stopped
   @Published var showError: Bool = false
   @Published var errorMessage: String = ""
+  @Published var hasActiveDevice: Bool = false
 
   var isStreaming: Bool {
     streamingStatus != .stopped
@@ -265,11 +266,13 @@ class StreamSessionViewModel: ObservableObject {
   private var errorListenerToken: AnyListenerToken?
   private var photoDataListenerToken: AnyListenerToken?
   private let wearables: WearablesInterface
+  private let deviceSelector: AutoDeviceSelector
+  private var deviceMonitorTask: Task<Void, Never>?
 
   init(wearables: WearablesInterface) {
     self.wearables = wearables
     // Let the SDK auto-select from available devices
-    let deviceSelector = AutoDeviceSelector(wearables: wearables)
+    self.deviceSelector = AutoDeviceSelector(wearables: wearables)
 
     // ================================================================================
     // STREAMING CONFIGURATION - CURRENT LIMITATIONS AND AVAILABLE OPTIONS
@@ -319,6 +322,13 @@ class StreamSessionViewModel: ObservableObject {
       resolution: StreamingResolution.low,  // TODO: Make this user-configurable
       frameRate: 24)  // Standard frame rate, could be adjusted for performance
     streamSession = StreamSession(streamSessionConfig: config, deviceSelector: deviceSelector)
+
+    // Monitor device availability
+    deviceMonitorTask = Task { @MainActor in
+      for await device in deviceSelector.activeDeviceStream() {
+        self.hasActiveDevice = device != nil
+      }
+    }
 
     // Subscribe to session state changes using the DAT SDK listener pattern
     // State changes tell us when streaming starts, stops, or encounters issues
@@ -403,12 +413,12 @@ class StreamSessionViewModel: ObservableObject {
     do {
       let status = try await wearables.checkPermissionStatus(permission)
       if status == .granted {
-        startSession()
+        await startSession()
         return
       }
       let requestStatus = try await wearables.requestPermission(permission)
       if requestStatus == .granted {
-        startSession()
+        await startSession()
         return
       }
       showError("Permission denied")
@@ -417,15 +427,13 @@ class StreamSessionViewModel: ObservableObject {
     }
   }
 
-  func startSession() {
+  func startSession() async {
     // Reset to unlimited time when starting a new stream
     activeTimeLimit = .noLimit
     remainingTime = 0
     stopTimer()
 
-    Task {
-      await streamSession.start()
-    }
+    await streamSession.start()
   }
 
   private func showError(_ message: String) {
@@ -433,11 +441,9 @@ class StreamSessionViewModel: ObservableObject {
     showError = true
   }
 
-  func stopSession() {
+  func stopSession() async {
     stopTimer()
-    Task {
-      await streamSession.stop()
-    }
+    await streamSession.stop()
   }
 
   func dismissError() {
@@ -474,7 +480,7 @@ class StreamSessionViewModel: ObservableObject {
         remainingTime -= 1
       }
       if let self, !Task.isCancelled {
-        stopSession()
+        await stopSession()
       }
     }
   }

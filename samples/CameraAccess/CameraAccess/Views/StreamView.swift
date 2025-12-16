@@ -61,8 +61,10 @@ struct StreamView: View {
       }
     }
     .onDisappear {
-      if viewModel.streamingStatus != .stopped {
-        viewModel.stopSession()
+      Task {
+        if viewModel.streamingStatus != .stopped {
+          await viewModel.stopSession()
+        }
       }
     }
     // Show captured photos from DAT SDK in a preview sheet
@@ -90,7 +92,9 @@ struct ControlsView: View {
         style: .destructive,
         isDisabled: false
       ) {
-        viewModel.stopSession()
+        Task {
+          await viewModel.stopSession()
+        }
       }
 
       // Timer button
