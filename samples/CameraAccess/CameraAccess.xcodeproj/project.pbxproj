@@ -37,6 +37,7 @@
 		F1A1A1A12F00000100000001 /* RaceClassification.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A1A1A12F00000100000002 /* RaceClassification.swift */; };
 		F1A1A1A12F00000100000003 /* RaceClassificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A1A1A12F00000100000004 /* RaceClassificationService.swift */; };
 		F1A1A1A12F00000100000005 /* RaceClassificationOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A1A1A12F00000100000006 /* RaceClassificationOverlay.swift */; };
+		F1A1A1A12F0000010000000A /* Race-CLS-FairFace_yolov8n.mlpackage in Resources */ = {isa = PBXBuildFile; fileRef = F1A1A1A12F00000100000007 /* Race-CLS-FairFace_yolov8n.mlpackage */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -331,6 +332,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8FD96B8D2E6F0A9800F56AB1 /* Assets.xcassets in Resources */,
+				F1A1A1A12F0000010000000A /* Race-CLS-FairFace_yolov8n.mlpackage in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
