@@ -423,6 +423,15 @@ class StreamSessionViewModel: ObservableObject {
         }
       }
     }
+    
+    // Auto-load default YOLO model
+    Task {
+      await loadDefaultYOLOModel()
+      // Enable detection by default once model is loaded
+      if detectionService.hasModel {
+        detectionService.isEnabled = true
+      }
+    }
   }
 
   func handleStartStreaming() async {

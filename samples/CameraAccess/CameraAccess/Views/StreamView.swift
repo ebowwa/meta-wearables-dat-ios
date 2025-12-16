@@ -141,14 +141,6 @@ struct ControlsView: View {
         viewModel.capturePhoto()
       }
       
-      // YOLO Detection toggle
-      CircleButton(
-        icon: viewModel.isDetectionEnabled ? "eye.fill" : "eye.slash",
-        text: viewModel.isDetectionEnabled ? "AI" : nil
-      ) {
-        viewModel.toggleDetection()
-      }
-      
       // Model picker button
       CircleButton(icon: "brain", text: nil) {
         viewModel.showModelPicker = true
