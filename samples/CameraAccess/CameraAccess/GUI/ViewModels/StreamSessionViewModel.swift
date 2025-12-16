@@ -454,7 +454,15 @@ class StreamSessionViewModel: ObservableObject {
     remainingTime = 0
     stopTimer()
 
-    await streamSession.start()
+    // Use Task.detached to avoid priority inversion:
+    // The main actor runs at User-initiated QoS, but the SDK's internal
+    // BackgroundThread runs at Default QoS. Calling start() directly from
+    // MainActor causes the higher-priority thread to wait on lower-priority work.
+    // Detaching drops the priority inheritance, allowing the SDK to run without
+    // triggering Thread Performance Checker warnings.
+    await Task.detached(priority: .utility) { [streamSession] in
+      await streamSession.start()
+    }.value
   }
 
   private func showError(_ message: String) {
@@ -464,7 +472,10 @@ class StreamSessionViewModel: ObservableObject {
 
   func stopSession() async {
     stopTimer()
-    await streamSession.stop()
+    // Same priority inversion mitigation as startSession()
+    await Task.detached(priority: .utility) { [streamSession] in
+      await streamSession.stop()
+    }.value
   }
 
   func dismissError() {

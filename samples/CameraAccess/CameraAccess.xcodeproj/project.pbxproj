@@ -125,6 +125,23 @@
 			);
 			sourceTree = "<group>";
 		};
+		76AB14C42EF224D700B3BFD0 /* GUI */ = {
+			isa = PBXGroup;
+			children = (
+				8FD96B762E6F0A9800F56AB1 /* Views */,
+				8FD96B702E6F0A9800F56AB1 /* ViewModels */,
+			);
+			path = GUI;
+			sourceTree = "<group>";
+		};
+		76AB14C52EF224EF00B3BFD0 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				76C6350F2EF20C850039FF8F /* yolo */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
 		7A7A7A7A7A7A7A7A7A7A7A7A /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -172,9 +189,8 @@
 		8FD96B7D2E6F0A9800F56AB1 /* CameraAccess */ = {
 			isa = PBXGroup;
 			children = (
-				76C6350F2EF20C850039FF8F /* yolo */,
-				8FD96B702E6F0A9800F56AB1 /* ViewModels */,
-				8FD96B762E6F0A9800F56AB1 /* Views */,
+				76AB14C52EF224EF00B3BFD0 /* Features */,
+				76AB14C42EF224D700B3BFD0 /* GUI */,
 				8FFD5FF82E8422B60035E446 /* Utils */,
 				8FD96B772E6F0A9800F56AB1 /* Assets.xcassets */,
 				8FD96B782E6F0A9800F56AB1 /* CameraAccess.entitlements */,

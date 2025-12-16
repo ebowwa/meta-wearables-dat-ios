@@ -19,6 +19,7 @@ class YOLOModelManager: ObservableObject {
     @Published private(set) var downloadStates: [String: YOLOModelDownloadState] = [:]
     @Published private(set) var activeModel: YOLOModelInfo?
     @Published private(set) var loadedVisionModel: VNCoreMLModel?
+    @Published private(set) var modelSpec: MLModelSpec = .empty
     @Published private(set) var isLoading: Bool = false
     @Published private(set) var loadError: String?
     
@@ -227,12 +228,17 @@ class YOLOModelManager: ObservableObject {
             let mlModel = try MLModel(contentsOf: compiledURL, configuration: config)
             let visionModel = try VNCoreMLModel(for: mlModel)
             
+            // Extract model specification
+            let spec = Self.extractSpec(from: mlModel)
+            
             self.loadedVisionModel = visionModel
             self.activeModel = model
+            self.modelSpec = spec
             self.isLoading = false
             
         } catch {
             self.loadError = error.localizedDescription
+            self.modelSpec = .empty
             self.isLoading = false
             throw error
         }
@@ -249,6 +255,86 @@ class YOLOModelManager: ObservableObject {
                 }
             }
         }
+    }
+    
+    /// Extract model specification from a loaded MLModel
+    private nonisolated static func extractSpec(from model: MLModel) -> MLModelSpec {
+        let description = model.modelDescription
+        
+        // Extract inputs
+        let inputs: [MLFeatureSpec] = description.inputDescriptionsByName.map { name, feature in
+            MLFeatureSpec(
+                name: name,
+                type: featureTypeName(feature.type),
+                shape: extractShape(from: feature),
+                description: nil
+            )
+        }.sorted { $0.name < $1.name }
+        
+        // Extract outputs
+        let outputs: [MLFeatureSpec] = description.outputDescriptionsByName.map { name, feature in
+            MLFeatureSpec(
+                name: name,
+                type: featureTypeName(feature.type),
+                shape: extractShape(from: feature),
+                description: nil
+            )
+        }.sorted { $0.name < $1.name }
+        
+        // Extract class labels if available
+        var classLabels: [String]? = nil
+        if let labelsKey = description.classLabels {
+            switch labelsKey {
+            case let stringLabels as [String]:
+                classLabels = stringLabels
+            case let intLabels as [Int64]:
+                classLabels = intLabels.map { String($0) }
+            default:
+                break
+            }
+        }
+        
+        return MLModelSpec(
+            inputs: inputs,
+            outputs: outputs,
+            author: description.metadata[.author] as? String,
+            license: description.metadata[.license] as? String,
+            modelDescription: description.metadata[.description] as? String,
+            version: description.metadata[.versionString] as? String,
+            classLabels: classLabels
+        )
+    }
+    
+    /// Convert MLFeatureType to human-readable string
+    private nonisolated static func featureTypeName(_ type: MLFeatureType) -> String {
+        switch type {
+        case .invalid: return "Invalid"
+        case .int64: return "Int64"
+        case .double: return "Double"
+        case .string: return "String"
+        case .image: return "Image"
+        case .multiArray: return "MultiArray"
+        case .dictionary: return "Dictionary"
+        case .sequence: return "Sequence"
+        @unknown default: return "Unknown"
+        }
+    }
+    
+    /// Extract shape from feature description
+    private nonisolated static func extractShape(from feature: MLFeatureDescription) -> [Int]? {
+        switch feature.type {
+        case .multiArray:
+            if let constraint = feature.multiArrayConstraint {
+                return constraint.shape.map { $0.intValue }
+            }
+        case .image:
+            if let constraint = feature.imageConstraint {
+                return [Int(constraint.pixelsWide), Int(constraint.pixelsHigh)]
+            }
+        default:
+            break
+        }
+        return nil
     }
     
     // MARK: - Model Deletion
