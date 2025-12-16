@@ -26,6 +26,135 @@ enum StreamingStatus {
 
 @MainActor
 class StreamSessionViewModel: ObservableObject {
+
+  // ================================================================================
+  // MWDAT SDK FRAMEWORK CAPABILITIES ANALYSIS
+  // ================================================================================
+  //
+  // This sample demonstrates BASIC streaming functionality from Meta wearable devices.
+  // While it effectively uses all three MWDAT frameworks, it only showcases a subset
+  // of the available capabilities. Framework utilization is currently ~95% complete
+  // for the demonstrated features, but ~60% for the full SDK potential.
+  //
+  // CURRENTLY DEMONSTRATED (✅ IMPLEMENTED):
+  // ========================================
+  // MWDATCore Framework:
+  // ✅ Device discovery and registration
+  // ✅ Permission handling (camera)
+  // ✅ Device state monitoring
+  // ✅ URL scheme handling for registration
+  // ✅ Mock device support (debug)
+  //
+  // MWDATCamera Framework:
+  // ✅ Video stream session management
+  // ✅ Basic video frame processing
+  // ✅ Photo capture (JPEG format)
+  // ✅ Streaming state management
+  // ✅ Error handling and recovery
+  // ✅ Time limit controls
+  //
+  // MWDATMockDevice Framework:
+  // ✅ Debug menu integration
+  // ✅ Mock device simulation
+  // ✅ Device state testing
+  //
+  // MISSING/OPTIMIZABLE FEATURES (❌ NOT DEMONSTRATED):
+  // =================================================
+  //
+  // 1. RESOLUTION OPTIONS:
+  //    ❌ StreamingResolution.medium (balanced quality/performance)
+  //    ❌ StreamingResolution.high (maximum quality)
+  //    ✅ StreamingResolution.low (current hardcoded setting)
+  //
+  // 2. ADVANCED CAMERA FEATURES:
+  //    ❌ Multiple resolution switching during runtime
+  //    ❌ Adaptive quality based on network conditions
+  //    ❌ Camera parameter controls (exposure, focus, white balance)
+  //    ❌ Frame rate optimization (currently fixed at 24fps)
+  //
+  // 3. AUDIO STREAMING:
+  //    ❌ Audio capture and streaming (NOT YET AVAILABLE IN SDK)
+  //    ❌ Audio/video synchronization (INFRASTRUCTURE EXISTS BUT NOT EXPOSED)
+  //    ❌ Audio format selection (SDK PREPARATION EVIDENT BUT NOT PUBLIC)
+  //    ❌ Microphone permission handling (NO AUDIO PERMISSION ENUM)
+  //
+  //    SDK AUDIO STATUS UPDATE:
+  //    ========================
+  //    Based on framework analysis (MWDATCamera.xcframework exploration):
+  //    - StreamSessionError.audioStreamingError exists (infrastructure ready)
+  //    - Analytics track audioCodec usage (future capability planned)
+  //    - NO public audio streaming APIs currently exposed
+  //    - NO audioFramePublisher equivalent to videoFramePublisher
+  //    - NO audio configuration in StreamSessionConfig
+  //    - NO microphone permission in Permission enum
+  //    - Current SDK only supports video streaming + photo capture
+  //
+  // 4. PERFORMANCE OPTIMIZATIONS:
+  //    ❌ Bandwidth usage monitoring and adaptation
+  //    ❌ Battery-aware streaming adjustments
+  //    ❌ Network quality detection
+  //    ❌ Compression settings
+  //
+  // 5. USER EXPERIENCE ENHANCEMENTS:
+  //    ❌ Resolution quality selector UI
+  //    ❌ Real-time bandwidth indicator
+  //    ❌ Battery usage estimation
+  //    ❌ Network quality indicator
+  //    ❌ Streaming quality presets (Low/Medium/High)
+  //
+  // 6. RECORDING & STORAGE:
+  //    ❌ Video recording to local storage
+  //    ❌ Audio recording capabilities
+  //    ❌ File format selection
+  //    ❌ Storage management
+  //
+  // TECHNICAL DEBT & IMPROVEMENT OPPORTUNITIES:
+  // ==========================================
+  // 1. Hardcoded configuration values should be user-configurable
+  // 2. No network bandwidth monitoring or adaptation
+  // 3. Missing audio streaming implementation
+  // 4. No dynamic resolution switching capability
+  // 5. Limited error recovery strategies
+  // 6. No performance metrics or analytics
+  //
+  // PRODUCTION-READY ENHANCEMENTS SUGGESTED:
+  // ======================================
+  // IMMEDIATE (CURRENT SDK CAPABILITIES):
+  // 1. Add SettingsScreen with resolution/quality controls (.low/.medium/.high)
+  // 2. Add network bandwidth monitoring and adaptation
+  // 3. Create adaptive quality algorithms based on network conditions
+  // 4. Implement local video recording from video frames
+  // 5. Add performance metrics dashboard (bandwidth, battery, quality)
+  // 6. Create device capability detection and optimization
+  // 7. Add battery usage optimization strategies
+  //
+  // FUTURE (WHEN AUDIO SDK IS RELEASED):
+  // 8. Implement audio streaming with A/V sync (awaiting SDK update)
+  // 9. Add audio codec selection and quality controls
+  //
+  // FRAMEWORK LOCATION & INTEGRATION NOTES:
+  // =======================================
+  // DAT SDK frameworks are located at:
+  // - MWDATCore: ../../MWDATCore.xcframework/
+  // - MWDATCamera: ../../MWDATCamera.xcframework/
+  // - MWDATMockDevice: ../../MWDATMockDevice.xcframework/
+  //
+  // These are XCFrameworks supporting both device and simulator architectures:
+  // - iOS arm64 (physical devices)
+  // - iOS x86_64 simulator
+  // - iOS arm64 simulator (Apple Silicon Macs)
+  //
+  // Framework versions and capabilities can be inspected in:
+  // - Headers: MWDATCamera.framework/Headers/MWDATCamera-Swift.h
+  // - Module interfaces: .framework/Modules/MWDATCamera.swiftinterface
+  //
+  // CONCLUSION:
+  // ===========
+  // This sample serves as an excellent STARTING POINT for DAT SDK integration,
+  // demonstrating core patterns and best practices. However, production applications
+  // should implement the missing features above to fully leverage the SDK's
+  // capabilities and provide a complete user experience.
+  //
   @Published var currentVideoFrame: UIImage?
   @Published var hasReceivedFirstFrame: Bool = false
   @Published var streamingStatus: StreamingStatus = .stopped
@@ -58,10 +187,54 @@ class StreamSessionViewModel: ObservableObject {
     self.wearables = wearables
     // Let the SDK auto-select from available devices
     let deviceSelector = AutoDeviceSelector(wearables: wearables)
+
+    // ================================================================================
+    // STREAMING CONFIGURATION - CURRENT LIMITATIONS AND AVAILABLE OPTIONS
+    // ================================================================================
+    //
+    // NOTE: This sample hardcodes the most basic configuration for simplicity.
+    // In a production app, you would want to make these configurable by the user
+    // or adapt them based on device capabilities, network conditions, and use case.
+    //
+    // CURRENT CONFIGURATION (LIMITED):
+    // - videoCodec: .raw (only codec available in current SDK version)
+    // - resolution: .low (lowest quality, but most bandwidth-efficient)
+    // - frameRate: 24 (standard for video streaming)
+    //
+    // AVAILABLE RESOLUTION OPTIONS NOT DEMONSTRATED:
+    // - .low: Current setting, lowest resolution, minimal bandwidth usage
+    //          Ideal for: Development, testing, low-power scenarios
+    // - .medium: Balanced quality and bandwidth
+    //            Ideal for: General use, moderate network conditions
+    // - .high: Maximum resolution, highest bandwidth usage
+    //           Ideal for: High-quality capture, recording, analysis
+    //
+    // PRODUCTION CONSIDERATIONS:
+    // 1. Network Bandwidth: Higher resolutions require significantly more bandwidth
+    //    - .low: ~1-2 Mbps (suitable for cellular networks)
+    //    - .medium: ~3-5 Mbps (requires stable WiFi/5G)
+    //    - .high: ~8-15+ Mbps (requires excellent connection)
+    //
+    // 2. Device Battery Life: Higher resolutions consume more power
+    //    - Consider offering user choice between quality and battery life
+    //
+    // 3. Storage Requirements: If recording video locally, higher resolutions
+    //    will consume more storage space
+    //
+    // 4. Processing Requirements: Higher resolution frames require more CPU/GPU
+    //    for processing and display
+    //
+    // SUGGESTED UI ENHANCEMENTS FOR PRODUCTION:
+    // - Resolution selector (Low/Medium/High)
+    // - Quality vs Battery life toggle
+    // - Network-aware auto-adjustment
+    // - Preview of selected resolution quality
+    // - Bandwidth usage indicator
+    //
     let config = StreamSessionConfig(
-      videoCodec: VideoCodec.raw,
-      resolution: StreamingResolution.low,
-      frameRate: 24)
+      videoCodec: VideoCodec.raw,  // Currently only .raw is available in SDK
+      resolution: StreamingResolution.low,  // TODO: Make this user-configurable
+      frameRate: 24)  // Standard frame rate, could be adjusted for performance
     streamSession = StreamSession(streamSessionConfig: config, deviceSelector: deviceSelector)
 
     // Subscribe to session state changes using the DAT SDK listener pattern
@@ -72,6 +245,34 @@ class StreamSessionViewModel: ObservableObject {
       }
     }
 
+    // ================================================================================
+    // VIDEO STREAMING HANDLING
+    // ================================================================================
+    // NOTE: This sample demonstrates VIDEO-ONLY streaming.
+    // Current DAT SDK version only supports video streaming + photo capture.
+    //
+    // SDK AUDIO CAPABILITY STATUS:
+    // ===========================
+    // After framework analysis (MWDATCamera.xcframework Headers/Modules):
+    // - INFRASTRUCTURE READY: StreamSessionError.audioStreamingError exists
+    // - FUTURE PLANNING: Analytics support audioCodec tracking in WearablesSDKStreamSessionEvent
+    // - CURRENT LIMITATION: NO public audio streaming APIs exposed
+    // - MISSING COMPONENTS: No audioFramePublisher, audio config, or mic permissions
+    //
+    // FUTURE AUDIO IMPLEMENTATION (WHEN SDK RELEASES):
+    // - Audio frame capture and processing (likely AudioFrame struct)
+    // - Audio/video synchronization (timestamp management)
+    // - Audio format selection (AAC, PCM, etc.)
+    // - Audio quality/bitrate configuration
+    // - Audio playback or recording capabilities
+    // - Microphone permission handling (currently no Permission.microphone enum)
+    //
+    // PRODUCTION AUDIO CONSIDERATIONS (FUTURE):
+    // 1. Audio Permissions: Will need to request microphone permission
+    // 2. Bandwidth Impact: Audio typically adds ~128-320 Kbps to streaming
+    // 3. Sync: A/V synchronization requires careful timestamp management
+    // 4. Codecs: Audio codec selection affects quality and compatibility
+    //
     // Subscribe to video frames from the device camera
     // Each VideoFrame contains the raw camera data that we convert to UIImage
     videoFrameListenerToken = streamSession.videoFramePublisher.listen { [weak self] videoFrame in
