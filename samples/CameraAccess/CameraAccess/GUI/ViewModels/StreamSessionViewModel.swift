@@ -17,6 +17,7 @@
 import MWDATCamera
 import MWDATCore
 import SwiftUI
+import Combine
 
 enum StreamingStatus {
   case streaming
@@ -279,6 +280,7 @@ class StreamSessionViewModel: ObservableObject {
   private let wearables: WearablesInterface
   private let deviceSelector: AutoDeviceSelector
   private var deviceMonitorTask: Task<Void, Never>?
+  private var modelUpdateCancellable: AnyCancellable?
 
   init(wearables: WearablesInterface) {
     self.wearables = wearables
@@ -424,9 +426,14 @@ class StreamSessionViewModel: ObservableObject {
       }
     }
     
-    // Auto-load default YOLO model
-    // Auto-load default YOLO model
-    // Note: Model loading is now deferred until the user explicitly enables detection
+    // Sync model manager's loaded model to detection service
+    // This ensures that when a user selects a model from the Model Picker,
+    // the detection service automatically uses the new model
+    modelUpdateCancellable = modelManager.$loadedVisionModel
+      .receive(on: DispatchQueue.main)
+      .sink { [weak self] visionModel in
+        self?.detectionService.setModel(visionModel)
+      }
   }
 
   func handleStartStreaming() async {

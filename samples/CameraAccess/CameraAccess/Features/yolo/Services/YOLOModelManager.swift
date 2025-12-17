@@ -57,7 +57,15 @@ class YOLOModelManager: ObservableObject {
         // 2. Discover local downloaded models
         models.append(contentsOf: discoverLocalModels())
         
-        // 3. Fetch cloud registry if available
+        // 3. Add featured models (pre-configured for easy install)
+        for featuredModel in Self.featuredModels() {
+            // Only add if not already downloaded locally
+            if !models.contains(where: { $0.name == featuredModel.name }) {
+                models.append(featuredModel)
+            }
+        }
+        
+        // 4. Fetch cloud registry if available
         if let registryURL = registryURL {
             let cloudModels = await fetchCloudRegistry(from: registryURL)
             // Only add cloud models that aren't already local
@@ -139,6 +147,20 @@ class YOLOModelManager: ObservableObject {
         }
     }
     
+    /// Featured models available for one-click installation
+    private static func featuredModels() -> [YOLOModelInfo] {
+        [
+            YOLOModelInfo(
+                id: "featured_yolo11_poker",
+                name: "YOLO11 Poker Detection",
+                description: "Detects 52 playing cards in real-time",
+                source: .remote(url: "https://github.com/ebowwa/meta-wearables-dat-ios/releases/download/poker-model-v1.0/YOLO11PokerInt8LUT.mlpackage.zip"),
+                version: "1.0",
+                sizeBytes: 4_800_000  // ~4.6 MB
+            )
+        ]
+    }
+    
     // MARK: - Model Download
     
     func downloadModel(_ model: YOLOModelInfo) async {
@@ -154,7 +176,7 @@ class YOLOModelManager: ObservableObject {
             
             // Files from URLSession often lack extensions, but MLModel.compileModel needs them.
             // Create a temporary URL with the correct extension.
-            let ext = url.pathExtension
+            let ext = url.pathExtension.lowercased()
             let tempWithExtURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension(ext.isEmpty ? "mlmodel" : ext)
             
             try FileManager.default.moveItem(at: tempURL, to: tempWithExtURL)
@@ -166,9 +188,40 @@ class YOLOModelManager: ObservableObject {
             // Destination URL for the compiled model
             let destURL = modelsDirectoryURL.appendingPathComponent("\(model.id).mlmodelc")
             
+            // Handle zip files (extract first)
+            var modelURL = tempWithExtURL
+            var tempExtractDir: URL? = nil
+            
+            if ext == "zip" {
+                let extractDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+                try FileManager.default.createDirectory(at: extractDir, withIntermediateDirectories: true)
+                tempExtractDir = extractDir
+                
+                // Unzip using Process (Foundation doesn't have built-in unzip)
+                let unzipResult = try await unzipFile(at: tempWithExtURL, to: extractDir)
+                guard unzipResult else {
+                    throw YOLOModelError.loadFailed(underlying: NSError(domain: "YOLOModelManager", code: -2, userInfo: [NSLocalizedDescriptionKey: "Failed to unzip model archive"]))
+                }
+                
+                // Find the .mlpackage or .mlmodelc inside
+                if let foundModel = try findModelInDirectory(extractDir) {
+                    modelURL = foundModel
+                } else {
+                    throw YOLOModelError.loadFailed(underlying: NSError(domain: "YOLOModelManager", code: -3, userInfo: [NSLocalizedDescriptionKey: "No .mlpackage or .mlmodelc found in zip"]))
+                }
+            }
+            
+            defer {
+                if let dir = tempExtractDir {
+                    try? FileManager.default.removeItem(at: dir)
+                }
+            }
+            
+            let modelExt = modelURL.pathExtension.lowercased()
+            
             // Compile logic
-            if ext == "mlmodel" || ext == "mlpackage" || ext.isEmpty {
-                let compiledURL = try await compileModel(at: tempWithExtURL)
+            if modelExt == "mlmodel" || modelExt == "mlpackage" {
+                let compiledURL = try await compileModel(at: modelURL)
                 
                 // If destination exists, remove it first
                 if FileManager.default.fileExists(atPath: destURL.path) {
@@ -176,14 +229,14 @@ class YOLOModelManager: ObservableObject {
                 }
                 
                 try FileManager.default.moveItem(at: compiledURL, to: destURL)
-            } else if ext == "mlmodelc" {
-                // Already compiled (unlikely for single file download unless zipped, handling basics)
+            } else if modelExt == "mlmodelc" {
+                // Already compiled
                 if FileManager.default.fileExists(atPath: destURL.path) {
                     try FileManager.default.removeItem(at: destURL)
                 }
-                try FileManager.default.moveItem(at: tempWithExtURL, to: destURL)
+                try FileManager.default.copyItem(at: modelURL, to: destURL)
             } else {
-                throw YOLOModelError.loadFailed(underlying: NSError(domain: "YOLOModelManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unsupported model extension: \(ext)"]))
+                throw YOLOModelError.loadFailed(underlying: NSError(domain: "YOLOModelManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unsupported model extension: \(modelExt)"]))
             }
             
             downloadStates[model.id] = .downloaded
@@ -193,6 +246,64 @@ class YOLOModelManager: ObservableObject {
             print("Download failed: \(error)")
             downloadStates[model.id] = .failed(error: error.localizedDescription)
         }
+    }
+    
+    /// Unzip a file to a destination directory (cross-platform: macOS and iOS)
+    private func unzipFile(at sourceURL: URL, to destURL: URL) async throws -> Bool {
+        return try await withCheckedThrowingContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                #if os(macOS)
+                // On macOS, use Process to call unzip
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
+                process.arguments = ["-o", "-q", sourceURL.path, "-d", destURL.path]
+                
+                do {
+                    try process.run()
+                    process.waitUntilExit()
+                    continuation.resume(returning: process.terminationStatus == 0)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+                #else
+                // On iOS, use pure Swift zip extraction
+                let result = Self.extractZipFile(at: sourceURL, to: destURL)
+                continuation.resume(returning: result)
+                #endif
+            }
+        }
+    }
+    
+    /// Pure Swift zip extraction for iOS using ZIPFoundation-style manual extraction
+    private nonisolated static func extractZipFile(at sourceURL: URL, to destinationURL: URL) -> Bool {
+        guard let archive = ZipArchiveReader(url: sourceURL) else {
+            print("Failed to open zip archive")
+            return false
+        }
+        
+        do {
+            try archive.extractAll(to: destinationURL)
+            return true
+        } catch {
+            print("Zip extraction failed: \(error)")
+            return false
+        }
+    }
+    
+    /// Find a .mlpackage or .mlmodelc in a directory (recursively)
+    private func findModelInDirectory(_ directory: URL) throws -> URL? {
+        let fileManager = FileManager.default
+        guard let enumerator = fileManager.enumerator(at: directory, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]) else {
+            return nil
+        }
+        
+        for case let fileURL as URL in enumerator {
+            let ext = fileURL.pathExtension.lowercased()
+            if ext == "mlpackage" || ext == "mlmodelc" {
+                return fileURL
+            }
+        }
+        return nil
     }
     
     func cancelDownload(_ model: YOLOModelInfo) {
@@ -316,6 +427,7 @@ class YOLOModelManager: ObservableObject {
         case .multiArray: return "MultiArray"
         case .dictionary: return "Dictionary"
         case .sequence: return "Sequence"
+        case .state: return "State"
         @unknown default: return "Unknown"
         }
     }
