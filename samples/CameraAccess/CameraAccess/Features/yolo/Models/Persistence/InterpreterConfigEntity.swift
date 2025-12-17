@@ -1,9 +1,9 @@
 /*
- * InterpreterConfig.swift
+ * InterpreterConfigEntity.swift
  * CameraAccess
  *
- * SwiftData model for per-model interpreter configuration.
- * Stores custom settings for how detections are processed.
+ * SwiftData entity for per-model interpreter configuration.
+ * Stores how detections should be processed for each model.
  */
 
 import Foundation
@@ -11,12 +11,12 @@ import SwiftData
 
 /// Per-model interpreter configuration
 @Model
-final class InterpreterConfig {
-    // MARK: - Identity
+final class InterpreterConfigEntity {
+    // MARK: - Identity (references ModelCatalog)
     
     @Attribute(.unique) var modelId: String
     
-    // MARK: - Common Settings
+    // MARK: - Detection Settings
     
     /// Non-maximum suppression threshold
     var nmsThreshold: Float = 0.45
@@ -44,6 +44,10 @@ final class InterpreterConfig {
     /// e.g., for poker: {"showHandRanking": true, "autoAnalyze": true}
     var customSettingsJSON: String?
     
+    // MARK: - Relationship
+    
+    var model: ModelCatalog?
+    
     // MARK: - Init
     
     init(modelId: String) {
@@ -67,6 +71,24 @@ final class InterpreterConfig {
         if let data = try? JSONSerialization.data(withJSONObject: settings),
            let json = String(data: data, encoding: .utf8) {
             customSettingsJSON = json
+        }
+    }
+    
+    /// Get color scheme as dictionary
+    func colorScheme() -> [String: String]? {
+        guard let json = colorSchemeJSON,
+              let data = json.data(using: .utf8),
+              let dict = try? JSONSerialization.jsonObject(with: data) as? [String: String] else {
+            return nil
+        }
+        return dict
+    }
+    
+    /// Set color scheme from dictionary
+    func setColorScheme(_ colors: [String: String]) {
+        if let data = try? JSONSerialization.data(withJSONObject: colors),
+           let json = String(data: data, encoding: .utf8) {
+            colorSchemeJSON = json
         }
     }
 }

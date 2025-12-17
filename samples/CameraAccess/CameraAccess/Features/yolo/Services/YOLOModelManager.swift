@@ -3,6 +3,7 @@
  * CameraAccess
  *
  * Central manager for discovering, downloading, and loading YOLO models.
+ * Now database-first: reads from SwiftData, discovers new models from filesystem.
  */
 
 import Foundation
@@ -28,6 +29,7 @@ class YOLOModelManager: ObservableObject {
     private var downloadTasks: [String: URLSessionDownloadTask] = [:]
     private let modelsDirectoryURL: URL
     private let registryURL: URL?
+    private let persistence = YOLOPersistenceManager.shared
     
     // MARK: - Initialization
     
@@ -40,50 +42,81 @@ class YOLOModelManager: ObservableObject {
         
         try? FileManager.default.createDirectory(at: modelsDirectoryURL, withIntermediateDirectories: true)
         
-        // Discover models
+        // Load models from database (with discovery for new files)
         Task {
-            await discoverModels()
+            await refreshModels()
         }
     }
     
-    // MARK: - Model Discovery
+    // MARK: - Model Discovery (Database-First)
     
-    func discoverModels() async {
-        var models: [YOLOModelInfo] = []
+    /// Refresh available models from database + discover new ones
+    func refreshModels() async {
+        // 0. Clean up any duplicate models from previous runs
+        persistence.cleanupDuplicates()
         
-        // 1. Discover bundled models
-        models.append(contentsOf: discoverBundledModels())
+        // 1. Get all models from database (source of truth)
+        var dbModels = persistence.allModels().map { $0.toModelInfo() }
         
-        // 2. Discover local downloaded models
-        models.append(contentsOf: discoverLocalModels())
+        // 2. Discover any new bundled models not in DB
+        let bundled = discoverBundledModels()
+        for model in bundled {
+            if !dbModels.contains(where: { $0.id == model.id || $0.name == model.name }) {
+                if let _ = persistence.addModel(model, isSeeded: false) {
+                    dbModels.append(model)
+                }
+            }
+        }
         
-        // 3. Add featured models (pre-configured for easy install)
-        for featuredModel in Self.featuredModels() {
-            // Only add if not already downloaded locally
-            if !models.contains(where: { $0.name == featuredModel.name }) {
-                models.append(featuredModel)
+        // 3. Discover any new local (downloaded) models not in DB
+        // Note: Skip files that match existing model IDs (these are downloaded versions of remote models)
+        let local = discoverLocalModels()
+        for model in local {
+            // Extract the base name without prefix to check if this is a downloaded remote model
+            let baseName = model.name // e.g. "featured_yolo11_poker" from "featured_yolo11_poker.mlmodelc"
+            
+            // Skip if this file corresponds to an existing model (e.g., downloaded remote)
+            let existsInDb = dbModels.contains(where: { 
+                $0.id == model.id ||           // Same ID
+                $0.id == baseName ||           // File name matches existing model ID
+                $0.name == model.name          // Same name
+            })
+            
+            if !existsInDb {
+                if let _ = persistence.addModel(model, isSeeded: false) {
+                    dbModels.append(model)
+                }
             }
         }
         
         // 4. Fetch cloud registry if available
         if let registryURL = registryURL {
             let cloudModels = await fetchCloudRegistry(from: registryURL)
-            // Only add cloud models that aren't already local
             for cloudModel in cloudModels {
-                if !models.contains(where: { $0.id == cloudModel.id }) {
-                    models.append(cloudModel)
+                if !dbModels.contains(where: { $0.id == cloudModel.id }) {
+                    if let _ = persistence.addModel(cloudModel, isSeeded: false) {
+                        dbModels.append(cloudModel)
+                    }
                 }
             }
         }
         
-        self.availableModels = models
+        self.availableModels = dbModels
         
         // Initialize download states
-        for model in models {
+        for model in dbModels {
             if downloadStates[model.id] == nil {
                 downloadStates[model.id] = model.isDownloaded ? .downloaded : .notDownloaded
             }
         }
+        
+        // Debug: print what's in the database
+        persistence.debugPrint()
+    }
+    
+    /// Legacy method for compatibility
+    func discoverModels() async {
+        await refreshModels()
     }
     
     private func discoverBundledModels() -> [YOLOModelInfo] {
@@ -147,20 +180,8 @@ class YOLOModelManager: ObservableObject {
         }
     }
     
-    /// Featured models available for one-click installation
-    private static func featuredModels() -> [YOLOModelInfo] {
-        [
-            YOLOModelInfo(
-                id: "featured_yolo11_poker",
-                name: "YOLO11 Poker Detection",
-                description: "Detects 52 playing cards in real-time",
-                source: .remote(url: "https://github.com/ebowwa/meta-wearables-dat-ios/releases/download/poker-model-v1.0/YOLO11PokerInt8LUT.mlpackage.zip"),
-                version: "1.0",
-                modelType: .poker,
-                sizeBytes: 4_800_000  // ~4.6 MB
-            )
-        ]
-    }
+    // Note: Featured models are now defined in FeaturedModels enum (YOLOPersistenceManager.swift)
+    // and seeded into the database on first launch
     
     // MARK: - Model Download
     
@@ -240,8 +261,11 @@ class YOLOModelManager: ObservableObject {
                 throw YOLOModelError.loadFailed(underlying: NSError(domain: "YOLOModelManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unsupported model extension: \(modelExt)"]))
             }
             
+            // Update database with local path
+            persistence.setLocalPath(destURL.path, for: model.id)
+            
             downloadStates[model.id] = .downloaded
-            await discoverModels()
+            await refreshModels()
             
         } catch {
             print("Download failed: \(error)")
@@ -472,6 +496,11 @@ class YOLOModelManager: ObservableObject {
             try? FileManager.default.removeItem(at: potentialCompiledPath)
         }
         
+        // Remove from database
+        if let catalogEntry = persistence.model(withId: model.id) {
+            persistence.deleteModel(catalogEntry)
+        }
+        
         // Remove from availableModels synchronously (prevents SwiftUI animation conflict)
         availableModels.removeAll { $0.id == model.id }
         
@@ -508,6 +537,9 @@ class YOLOModelManager: ObservableObject {
             source: .remote(url: processedURL.absoluteString),
             version: "1.0"
         )
+        
+        // Add to database
+        _ = persistence.addModel(model, isSeeded: false)
         
         availableModels.append(model)
         downloadStates[model.id] = .notDownloaded
