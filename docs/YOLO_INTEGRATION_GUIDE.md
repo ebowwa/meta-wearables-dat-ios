@@ -9,6 +9,9 @@ The integration process has three main steps:
 2. **Add** the `.mlpackage` to your Xcode project
 3. **Implement** Swift code to run inference
 
+> [!TIP]
+> For the overall system design and composability patterns, see [YOLO Composable Architecture](./YOLO_COMPOSABLE_ARCHITECTURE.md).
+
 ---
 
 ## Step 1: Convert Model to CoreML
