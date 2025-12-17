@@ -432,7 +432,9 @@ class StreamSessionViewModel: ObservableObject {
     modelUpdateCancellable = modelManager.$loadedVisionModel
       .receive(on: DispatchQueue.main)
       .sink { [weak self] visionModel in
-        self?.detectionService.setModel(visionModel)
+        guard let self = self else { return }
+        let modelType = self.modelManager.activeModel?.modelType ?? .generic
+        self.detectionService.setModel(visionModel, modelType: modelType)
       }
   }
 
@@ -572,7 +574,7 @@ class StreamSessionViewModel: ObservableObject {
       do {
         try await modelManager.loadModel(yoloModel)
         if let visionModel = modelManager.loadedVisionModel {
-          detectionService.setModel(visionModel)
+          detectionService.setModel(visionModel, modelType: yoloModel.modelType)
         }
       } catch {
         showError("Failed to load YOLO model: \(error.localizedDescription)")

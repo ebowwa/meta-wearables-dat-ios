@@ -36,6 +36,7 @@ class YOLODetectionService: ObservableObject {
     
     @Published private(set) var isProcessing = false
     @Published private(set) var lastDetections: [YOLODetection] = []
+    @Published private(set) var interpretedResult: InterpretedDetections?
     @Published private(set) var inferenceTimeMs: Double = 0
     @Published var confidenceThreshold: Float = 0.5
     @Published var isEnabled = false
@@ -43,19 +44,26 @@ class YOLODetectionService: ObservableObject {
     // MARK: - Private Properties
     
     private var visionModel: VNCoreMLModel?
+    private var currentModelType: YOLOModelType = .generic
     private var lastProcessTime: Date?
     private let minProcessingInterval: TimeInterval = 0.05  // 20 FPS max
     
     // MARK: - Model Management
     
     /// Update the model used for detection
-    func setModel(_ model: VNCoreMLModel?) {
+    func setModel(_ model: VNCoreMLModel?, modelType: YOLOModelType = .generic) {
         self.visionModel = model
+        self.currentModelType = modelType
         self.lastDetections = []
+        self.interpretedResult = nil
     }
     
     var hasModel: Bool {
         visionModel != nil
+    }
+    
+    var modelType: YOLOModelType {
+        currentModelType
     }
     
     // MARK: - Detection
@@ -108,6 +116,11 @@ class YOLODetectionService: ObservableObject {
         inferenceTimeMs = endTime.timeIntervalSince(startTime) * 1000
         lastProcessTime = endTime
         lastDetections = detections
+        
+        // Run interpreter for model-specific processing
+        let interpreter = InterpreterRegistry.shared.interpreter(for: currentModelType)
+        interpretedResult = interpreter.interpret(detections)
+        
         isProcessing = false
         
         return detections
