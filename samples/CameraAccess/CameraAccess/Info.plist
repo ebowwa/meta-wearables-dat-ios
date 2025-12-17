@@ -94,5 +94,13 @@
 	<array>
 		<string>fb-viewapp</string>
 	</array>
+	<!-- Local Network permissions for Mac Relay via MultipeerConnectivity -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>CameraAccess uses the local network to stream video from your glasses to your Mac.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_meta-glasses._tcp</string>
+		<string>_meta-glasses._udp</string>
+	</array>
 </dict>
 </plist>
