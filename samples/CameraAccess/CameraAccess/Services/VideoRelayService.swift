@@ -83,6 +83,12 @@ class VideoRelayService: NSObject, ObservableObject {
     private var byteCount = 0
     private var lastStatsUpdate = Date()
 
+    // Frame throttling for performance
+    private var lastFrameSentTime: Date = .distantPast
+    private let minFrameInterval: TimeInterval = 1.0 / 15.0  // Max 15 FPS for relay
+    private var isProcessingFrame = false
+    private let processingQueue = DispatchQueue(label: "com.relay.compression", qos: .userInitiated)
+
     // MARK: - Initialization
 
     init(mode: Mode, deviceName: String? = nil) {
@@ -186,12 +192,51 @@ class VideoRelayService: NSObject, ObservableObject {
     }
 
     /// Convenience method to send a UIImage (iOS only)
+    /// Uses throttling and background processing to avoid UI stuttering
     #if os(iOS)
     func broadcastImage(_ image: UIImage, compressionQuality: CGFloat = 0.5) {
-        guard let jpegData = image.jpegData(compressionQuality: compressionQuality) else {
-            return
+        // Throttle: Skip if we sent a frame too recently
+        let now = Date()
+        guard now.timeIntervalSince(lastFrameSentTime) >= minFrameInterval else {
+            return // Drop frame - too soon
         }
-        broadcastFrame(jpegData)
+
+        // Skip if still processing previous frame
+        guard !isProcessingFrame else {
+            return // Drop frame - busy
+        }
+
+        isProcessingFrame = true
+        lastFrameSentTime = now
+
+        // Move compression to background thread
+        processingQueue.async { [weak self] in
+            guard let self = self else { return }
+
+            // Resize image for better performance (max 480p for relay)
+            let maxDimension: CGFloat = 640
+            let resizedImage: UIImage
+            if image.size.width > maxDimension || image.size.height > maxDimension {
+                let scale = min(maxDimension / image.size.width, maxDimension / image.size.height)
+                let newSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+                UIGraphicsBeginImageContextWithOptions(newSize, true, 1.0)
+                image.draw(in: CGRect(origin: .zero, size: newSize))
+                resizedImage = UIGraphicsGetImageFromCurrentImageContext() ?? image
+                UIGraphicsEndImageContext()
+            } else {
+                resizedImage = image
+            }
+
+            // Compress to JPEG
+            guard let jpegData = resizedImage.jpegData(compressionQuality: compressionQuality) else {
+                self.isProcessingFrame = false
+                return
+            }
+
+            // Send on background thread (MCSession.send is thread-safe)
+            self.broadcastFrame(jpegData)
+            self.isProcessingFrame = false
+        }
     }
     #endif
 
