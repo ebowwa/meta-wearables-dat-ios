@@ -11,7 +11,7 @@ This private repository (`meta-wearables-dat-ios-yolo`) contains proprietary YOL
 
 - **Private Repo**: `ebowwa/meta-wearables-dat-ios-yolo`
   - Contains everything in public repo + YOLO features.
-  - Frameworks are located in `DAT/` (Legacy path).
+  - Frameworks are located in `com.MWDAT/`.
 
 ## Merging Back Implementation
 
@@ -43,20 +43,7 @@ git remote add private https://github.com/ebowwa/meta-wearables-dat-ios-yolo.git
    ```
 
 3. **Resolve Conflicts:**
-   You will likely encounter a tree conflict due to the folder rename:
-   - Public: `com.MWDAT/`
-   - Private: `DAT/`
-
-   **Resolution Strategy:**
-   - Keep `com.MWDAT/` as the canonical path.
-   - Move any new files from `DAT/` (in private) into `com.MWDAT/`.
-   - Update any internal references in the private code to point to `com.MWDAT`.
-
-   ```bash
-   # Example resolution if git doesn't auto-resolve the move
-   git rm -r DAT
-   # Move contents...
-   ```
+   Since both repositories now use `com.MWDAT/`, you should not encounter directory rename conflicts. Standard merge conflicts (if any) can be resolved normally.
 
 4. **Push to Public:**
    ```bash
