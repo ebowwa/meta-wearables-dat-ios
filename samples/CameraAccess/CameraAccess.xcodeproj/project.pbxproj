@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		AABBCC112F00000000000001 /* VideoRelayService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABBCC002F00000000000001 /* VideoRelayService.swift */; };
 		AABBCC122F00000000000002 /* RelayStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABBCC002F00000000000002 /* RelayStatusView.swift */; };
+		MACRCV001000000000000001 /* MacReceiverApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = MACRCV000000000000000001 /* MacReceiverApp.swift */; };
+		MACRCV001000000000000002 /* MacReceiverContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = MACRCV000000000000000002 /* MacReceiverContentView.swift */; };
+		MACRCV001000000000000003 /* VideoRelayService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABBCC002F00000000000001 /* VideoRelayService.swift */; };
 		8F2D23802E856711002D0588 /* DebugMenuViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F2D237F2E856711002D0588 /* DebugMenuViewModel.swift */; };
 		8F8F00782E8ACB4600A4BDAF /* WearablesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F8F00772E8ACB4500A4BDAF /* WearablesViewModel.swift */; };
 		8FD96B7F2E6F0A9800F56AB1 /* CameraAccessApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FD96B792E6F0A9800F56AB1 /* CameraAccessApp.swift */; };
@@ -64,6 +67,10 @@
 /* Begin PBXFileReference section */
 		AABBCC002F00000000000001 /* VideoRelayService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoRelayService.swift; sourceTree = "<group>"; };
 		AABBCC002F00000000000002 /* RelayStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelayStatusView.swift; sourceTree = "<group>"; };
+		MACRCV000000000000000001 /* MacReceiverApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacReceiverApp.swift; sourceTree = "<group>"; };
+		MACRCV000000000000000002 /* MacReceiverContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacReceiverContentView.swift; sourceTree = "<group>"; };
+		MACRCV000000000000000003 /* MacReceiver.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MacReceiver.entitlements; sourceTree = "<group>"; };
+		MACRCV000000000000000099 /* MacReceiver.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacReceiver.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3A3A3A3A3A3A3A3A3A3A3A3A /* CameraAccess.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CameraAccess.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8F2D237F2E856711002D0588 /* DebugMenuViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugMenuViewModel.swift; sourceTree = "<group>"; };
 		8F8F00772E8ACB4500A4BDAF /* WearablesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WearablesViewModel.swift; sourceTree = "<group>"; };
@@ -109,6 +116,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		MACRCV000000000000000202 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -116,6 +130,7 @@
 			isa = PBXGroup;
 			children = (
 				8FD96B7D2E6F0A9800F56AB1 /* CameraAccess */,
+				MACRCV000000000000000100 /* MacReceiver */,
 				8F2A14F12DDBCEB900D4E5F2 /* Frameworks */,
 				7A7A7A7A7A7A7A7A7A7A7A7A /* Products */,
 				E699CC962E8150670052C240 /* CameraAccessTests */,
@@ -126,9 +141,20 @@
 			isa = PBXGroup;
 			children = (
 				3A3A3A3A3A3A3A3A3A3A3A3A /* CameraAccess.app */,
+				MACRCV000000000000000099 /* MacReceiver.app */,
 				E699CC952E8150670052C240 /* CameraAccessTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		MACRCV000000000000000100 /* MacReceiver */ = {
+			isa = PBXGroup;
+			children = (
+				MACRCV000000000000000001 /* MacReceiverApp.swift */,
+				MACRCV000000000000000002 /* MacReceiverContentView.swift */,
+				MACRCV000000000000000003 /* MacReceiver.entitlements */,
+			);
+			path = MacReceiver;
 			sourceTree = "<group>";
 		};
 		8F2A14F12DDBCEB900D4E5F2 /* Frameworks */ = {
@@ -272,6 +298,23 @@
 			productReference = E699CC952E8150670052C240 /* CameraAccessTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		MACRCV000000000000000200 /* MacReceiver */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = MACRCV000000000000000300 /* Build configuration list for PBXNativeTarget "MacReceiver" */;
+			buildPhases = (
+				MACRCV000000000000000201 /* Sources */,
+				MACRCV000000000000000202 /* Frameworks */,
+				MACRCV000000000000000203 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MacReceiver;
+			productName = MacReceiver;
+			productReference = MACRCV000000000000000099 /* MacReceiver.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -284,6 +327,9 @@
 				TargetAttributes = {
 					8A8A8A8A8A8A8A8A8A8A8A8A = {
 						CreatedOnToolsVersion = 12.5;
+					};
+					MACRCV000000000000000200 = {
+						CreatedOnToolsVersion = 15.0;
 					};
 					E699CC942E8150670052C240 = {
 						CreatedOnToolsVersion = 26.0;
@@ -308,6 +354,7 @@
 			projectRoot = "";
 			targets = (
 				8A8A8A8A8A8A8A8A8A8A8A8A /* CameraAccess */,
+				MACRCV000000000000000200 /* MacReceiver */,
 				E699CC942E8150670052C240 /* CameraAccessTests */,
 			);
 		};
@@ -329,9 +376,26 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		MACRCV000000000000000203 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		MACRCV000000000000000201 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				MACRCV001000000000000001 /* MacReceiverApp.swift in Sources */,
+				MACRCV001000000000000002 /* MacReceiverContentView.swift in Sources */,
+				MACRCV001000000000000003 /* VideoRelayService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AAAAAAAAAAAAAAAAAAAAAA /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -616,6 +680,60 @@
 			};
 			name = Release;
 		};
+		MACRCV000000000000000301 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MacReceiver/MacReceiver.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XC95HBTW84;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.humanwritten.MacReceiver;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		MACRCV000000000000000302 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MacReceiver/MacReceiver.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XC95HBTW84;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.humanwritten.MacReceiver;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -642,6 +760,15 @@
 			buildConfigurations = (
 				E699CC9B2E8150670052C240 /* Debug */,
 				E699CC9C2E8150670052C240 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		MACRCV000000000000000300 /* Build configuration list for PBXNativeTarget "MacReceiver" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				MACRCV000000000000000301 /* Debug */,
+				MACRCV000000000000000302 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
