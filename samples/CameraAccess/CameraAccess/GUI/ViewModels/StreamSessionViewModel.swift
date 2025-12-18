@@ -264,9 +264,18 @@ class StreamSessionViewModel: ObservableObject {
   let detectionService = YOLODetectionService()
   @Published var currentDetections: [YOLODetection] = []
   
+  // KNN Training properties
+  let trainingService = TrainingService()
+  @Published var showTrainingOverlay: Bool = true
+  
   var isDetectionEnabled: Bool {
     get { detectionService.isEnabled }
     set { detectionService.isEnabled = newValue }
+  }
+  
+  var isTrainingModeEnabled: Bool {
+    get { trainingService.mode == .training }
+    set { trainingService.mode = newValue ? .training : .inference }
   }
 
   private var timerTask: Task<Void, Never>?
@@ -395,6 +404,11 @@ class StreamSessionViewModel: ObservableObject {
           if self.detectionService.isEnabled && self.detectionService.hasModel {
             let detections = await self.detectionService.detect(in: image)
             self.currentDetections = detections
+          }
+          
+          // Run KNN prediction in inference mode (throttled)
+          if self.showTrainingOverlay && self.trainingService.mode == .inference {
+            await self.runPrediction()
           }
         }
       }
@@ -598,5 +612,28 @@ class StreamSessionViewModel: ObservableObject {
         currentDetections = []
       }
     }
+  }
+  
+  // MARK: - KNN Training
+  
+  /// Capture current frame with label for KNN training
+  func captureWithLabel(_ label: String) {
+    guard let image = currentVideoFrame else {
+      print("❌ No video frame to capture")
+      return
+    }
+    
+    Task {
+      let success = await trainingService.addTrainingSample(image: image, label: label)
+      if success {
+        print("✅ Captured training sample: \(label)")
+      }
+    }
+  }
+  
+  /// Run KNN prediction on current frame
+  func runPrediction() async {
+    guard let image = currentVideoFrame else { return }
+    _ = await trainingService.predict(image: image)
   }
 }

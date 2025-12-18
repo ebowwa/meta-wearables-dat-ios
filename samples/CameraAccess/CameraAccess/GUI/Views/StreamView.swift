@@ -85,6 +85,13 @@ struct StreamView: View {
             .foregroundColor(.white)
         }
       }
+      
+      // KNN Training overlay
+      if viewModel.showTrainingOverlay {
+        TrainingOverlay(trainingService: viewModel.trainingService) { label in
+          viewModel.captureWithLabel(label)
+        }
+      }
     }
     .onDisappear {
       Task {
