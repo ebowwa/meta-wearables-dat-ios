@@ -13,6 +13,7 @@ struct PokerDetectionOverlay: View {
     let detectedCards: [DetectedCard]
     let handResult: PokerHandResult?
     let frameSize: CGSize
+    let imageSize: CGSize?
     
     var body: some View {
         ZStack {
@@ -20,7 +21,8 @@ struct PokerDetectionOverlay: View {
             ForEach(detectedCards) { card in
                 CardBoundingBox(
                     card: card,
-                    frameSize: frameSize
+                    frameSize: frameSize,
+                    imageSize: imageSize
                 )
             }
             
@@ -40,6 +42,7 @@ struct PokerDetectionOverlay: View {
 struct CardBoundingBox: View {
     let card: DetectedCard
     let frameSize: CGSize
+    let imageSize: CGSize?
     
     private var boxColor: Color {
         switch card.card.suit {
@@ -49,7 +52,7 @@ struct CardBoundingBox: View {
     }
     
     var body: some View {
-        let rect = card.boundingBoxForView(size: frameSize)
+        let rect = card.boundingBoxForView(size: frameSize, imageSize: imageSize)
         
         ZStack(alignment: .topLeading) {
             // Bounding box rectangle
@@ -163,7 +166,8 @@ struct PokerModeToggle: View {
                 cards: [PokerCard(suit: .hearts, rank: .ace), PokerCard(suit: .diamonds, rank: .ace)],
                 description: "Pair: Aces"
             ),
-            frameSize: CGSize(width: 393, height: 700)
+            frameSize: CGSize(width: 393, height: 700),
+            imageSize: CGSize(width: 480, height: 640)
         )
     }
 }

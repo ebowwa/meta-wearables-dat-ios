@@ -42,7 +42,8 @@ struct StreamView: View {
               PokerDetectionOverlay(
                 detectedCards: viewModel.detectedCards,
                 handResult: viewModel.currentHandResult,
-                frameSize: geometry.size
+                frameSize: geometry.size,
+                imageSize: videoFrame.size
               )
             }
           }

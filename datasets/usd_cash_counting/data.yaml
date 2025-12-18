@@ -1,0 +1,44 @@
+# USD Cash Counting Dataset - YOLO Training Configuration
+# For detecting, classifying, and counting US currency
+
+# Dataset paths (relative to this file)
+path: .
+train: images/train
+val: images/val
+test: images/test
+
+# Number of classes
+nc: 10
+
+# Class names - ordered by ID
+names:
+  0: penny
+  1: nickel
+  2: dime
+  3: quarter
+  4: dollar_bill
+  5: five_dollars
+  6: ten_dollars
+  7: twenty_dollars
+  8: fifty_dollars
+  9: hundred_dollars
+
+# Class values in cents (for counting/summing)
+# Used by post-processing interpreter
+values:
+  0: 1      # penny = $0.01
+  1: 5      # nickel = $0.05
+  2: 10     # dime = $0.10
+  3: 25     # quarter = $0.25
+  4: 100    # dollar_bill = $1.00
+  5: 500    # five_dollars = $5.00
+  6: 1000   # ten_dollars = $10.00
+  7: 2000   # twenty_dollars = $20.00
+  8: 5000   # fifty_dollars = $50.00
+  9: 10000  # hundred_dollars = $100.00
+
+# Training recommendations
+# - imgsz: 640 (default YOLO size)
+# - batch: 16 (adjust based on GPU memory)
+# - epochs: 100-300
+# - Model: yolov8n.pt for mobile, yolov8s.pt for accuracy

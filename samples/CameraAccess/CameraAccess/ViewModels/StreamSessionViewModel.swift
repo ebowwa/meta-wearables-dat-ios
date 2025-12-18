@@ -329,6 +329,7 @@ class StreamSessionViewModel: ObservableObject {
   @Published var isPokerDetectionEnabled: Bool = false
   @Published var detectedCards: [DetectedCard] = []
   @Published var currentHandResult: PokerHandResult?
+  @Published var isProcessingDetection: Bool = false
   private var detectionTask: Task<Void, Never>?
 
   private var timerTask: Task<Void, Never>?
@@ -606,6 +607,7 @@ class StreamSessionViewModel: ObservableObject {
       // Clear detections when disabled
       detectedCards = []
       currentHandResult = nil
+      isProcessingDetection = false
       detectionTask?.cancel()
       detectionTask = nil
     }
@@ -613,16 +615,22 @@ class StreamSessionViewModel: ObservableObject {
   
   /// Run poker detection on the given image (throttled)
   private func runPokerDetection(on image: UIImage) {
-    // Cancel any pending detection to avoid buildup
-    detectionTask?.cancel()
+    // Avoid starting a new detection if one is already in progress
+    // This prevents the "cancellation loop" where tasks never finish
+    guard !isProcessingDetection else { return }
     
     detectionTask = Task { [weak self] in
       guard let self, !Task.isCancelled else { return }
       
+      await MainActor.run { self.isProcessingDetection = true }
+      
       // Run detection
       let cards = await PokerDetectionService.shared.detect(image: image)
       
-      guard !Task.isCancelled else { return }
+      guard !Task.isCancelled else { 
+        await MainActor.run { self.isProcessingDetection = false }
+        return 
+      }
       
       await MainActor.run {
         self.detectedCards = cards
@@ -633,6 +641,8 @@ class StreamSessionViewModel: ObservableObject {
         } else {
           self.currentHandResult = nil
         }
+        
+        self.isProcessingDetection = false
       }
     }
   }

@@ -123,13 +123,40 @@ struct DetectedCard: Identifiable {
     let confidence: Float
     let boundingBox: CGRect  // Normalized coordinates (0-1)
     
-    /// Convert bounding box to view coordinates
-    func boundingBoxForView(size: CGSize) -> CGRect {
-        CGRect(
-            x: boundingBox.origin.x * size.width,
-            y: boundingBox.origin.y * size.height,
-            width: boundingBox.width * size.width,
-            height: boundingBox.height * size.height
+    /// Convert bounding box to view coordinates, accounting for .fill aspect ratio cropping
+    func boundingBoxForView(size: CGSize, imageSize: CGSize?) -> CGRect {
+        guard let imageSize = imageSize, imageSize.width > 0, imageSize.height > 0 else {
+            // Fallback to simple scaling if image size is unknown
+            return CGRect(
+                x: boundingBox.origin.x * size.width,
+                y: boundingBox.origin.y * size.height,
+                width: boundingBox.width * size.width,
+                height: boundingBox.height * size.height
+            )
+        }
+        
+        let imageRatio = imageSize.width / imageSize.height
+        let viewRatio = size.width / size.height
+        
+        var scale: CGFloat
+        var offsetX: CGFloat = 0
+        var offsetY: CGFloat = 0
+        
+        if viewRatio > imageRatio {
+            // View is wider than image (or less tall) - scale to match width, clip top/bottom
+            scale = size.width / imageSize.width
+            offsetY = (size.height - imageSize.height * scale) / 2
+        } else {
+            // View is narrower than image (or less wide) - scale to match height, clip left/right
+            scale = size.height / imageSize.height
+            offsetX = (size.width - imageSize.width * scale) / 2
+        }
+        
+        return CGRect(
+            x: boundingBox.origin.x * imageSize.width * scale + offsetX,
+            y: boundingBox.origin.y * imageSize.height * scale + offsetY,
+            width: boundingBox.width * imageSize.width * scale,
+            height: boundingBox.height * imageSize.height * scale
         )
     }
 }
