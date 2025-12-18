@@ -25,17 +25,31 @@ class EmbeddingExtractor {
     
     private func loadModel() async {
         do {
-            guard let modelURL = Bundle.main.url(forResource: "MobileNetEmbedding", withExtension: "mlmodelc")
-                ?? Bundle.main.url(forResource: "MobileNetEmbedding", withExtension: "mlpackage") else {
-                print("❌ MobileNetEmbedding model not found")
+            print("📦 Loading MobileNetEmbedding...")
+            
+            // First try to load pre-compiled model directly (Xcode may have compiled .mlpackage to .mlmodelc)
+            if let compiledURL = Bundle.main.url(forResource: "MobileNetEmbedding", withExtension: "mlmodelc") {
+                // Try loading directly without re-compilation
+                do {
+                    let mlModel = try MLModel(contentsOf: compiledURL)
+                    model = try VNCoreMLModel(for: mlModel)
+                    print("✅ MobileNetEmbedding loaded from pre-compiled model")
+                    return
+                } catch {
+                    print("⚠️ Pre-compiled model failed, trying package: \(error.localizedDescription)")
+                }
+            }
+            
+            // Try loading from .mlpackage and compiling
+            if let packageURL = Bundle.main.url(forResource: "MobileNetEmbedding", withExtension: "mlpackage") {
+                let compiledURL = try await MLModel.compileModel(at: packageURL)
+                let mlModel = try MLModel(contentsOf: compiledURL)
+                model = try VNCoreMLModel(for: mlModel)
+                print("✅ MobileNetEmbedding loaded from package")
                 return
             }
             
-            print("📦 Loading MobileNetEmbedding...")
-            let compiledURL = try await MLModel.compileModel(at: modelURL)
-            let mlModel = try MLModel(contentsOf: compiledURL)
-            model = try VNCoreMLModel(for: mlModel)
-            print("✅ MobileNetEmbedding loaded - \(embeddingDimension)-dim embeddings")
+            print("❌ MobileNetEmbedding model not found in bundle")
             
         } catch {
             print("❌ Failed to load MobileNetEmbedding: \(error)")
