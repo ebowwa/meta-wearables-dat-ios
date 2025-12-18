@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0]
+
+### Changed
+
+- [API] In `PermissionError`, `companionAppNotInstalled` has been renamed to `metaAINotInstalled`.
+- Relaxed constraints to API methods, allowing some to run outside `@MainActor`.
+- The Camera Access app streaming UI reflects device availability.
+- The Camera Access app shows errors when incompatible glasses are found.
+- The Camera Access app can now run in background mode, without interrupting streaming (but stopping video decoding).
+
+### Fixed
+
+- Streaming status is set to `stopped` if permission is not granted.
+- Fixed UI issues in the Camera Access app.
+
 ## [0.2.1] - 2025-12-04
 
 ### Added

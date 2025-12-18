@@ -312,6 +312,7 @@ class StreamSessionViewModel: ObservableObject {
   @Published var streamingStatus: StreamingStatus = .stopped
   @Published var showError: Bool = false
   @Published var errorMessage: String = ""
+  @Published var hasActiveDevice: Bool = false
 
   var isStreaming: Bool {
     streamingStatus != .stopped
@@ -341,60 +342,25 @@ class StreamSessionViewModel: ObservableObject {
   private var errorListenerToken: AnyListenerToken?
   private var photoDataListenerToken: AnyListenerToken?
   private let wearables: WearablesInterface
+  private let deviceSelector: AutoDeviceSelector
+  private var deviceMonitorTask: Task<Void, Never>?
 
   init(wearables: WearablesInterface) {
     self.wearables = wearables
     // Let the SDK auto-select from available devices
-    let deviceSelector = AutoDeviceSelector(wearables: wearables)
-
-    // ================================================================================
-    // STREAMING CONFIGURATION - CURRENT LIMITATIONS AND AVAILABLE OPTIONS
-    // ================================================================================
-    //
-    // NOTE: This sample hardcodes the most basic configuration for simplicity.
-    // In a production app, you would want to make these configurable by the user
-    // or adapt them based on device capabilities, network conditions, and use case.
-    //
-    // CURRENT CONFIGURATION (LIMITED):
-    // - videoCodec: .raw (only codec available in current SDK version)
-    // - resolution: .low (lowest quality, but most bandwidth-efficient)
-    // - frameRate: 24 (standard for video streaming)
-    //
-    // AVAILABLE RESOLUTION OPTIONS NOT DEMONSTRATED:
-    // - .low: Current setting, lowest resolution, minimal bandwidth usage
-    //          Ideal for: Development, testing, low-power scenarios
-    // - .medium: Balanced quality and bandwidth
-    //            Ideal for: General use, moderate network conditions
-    // - .high: Maximum resolution, highest bandwidth usage
-    //           Ideal for: High-quality capture, recording, analysis
-    //
-    // PRODUCTION CONSIDERATIONS:
-    // 1. Network Bandwidth: Higher resolutions require significantly more bandwidth
-    //    - .low: ~1-2 Mbps (suitable for cellular networks)
-    //    - .medium: ~3-5 Mbps (requires stable WiFi/5G)
-    //    - .high: ~8-15+ Mbps (requires excellent connection)
-    //
-    // 2. Device Battery Life: Higher resolutions consume more power
-    //    - Consider offering user choice between quality and battery life
-    //
-    // 3. Storage Requirements: If recording video locally, higher resolutions
-    //    will consume more storage space
-    //
-    // 4. Processing Requirements: Higher resolution frames require more CPU/GPU
-    //    for processing and display
-    //
-    // SUGGESTED UI ENHANCEMENTS FOR PRODUCTION:
-    // - Resolution selector (Low/Medium/High)
-    // - Quality vs Battery life toggle
-    // - Network-aware auto-adjustment
-    // - Preview of selected resolution quality
-    // - Bandwidth usage indicator
-    //
+    self.deviceSelector = AutoDeviceSelector(wearables: wearables)
     let config = StreamSessionConfig(
       videoCodec: VideoCodec.raw,  // Currently only .raw is available in SDK
       resolution: StreamingResolution.low,  // TODO: Make this user-configurable
       frameRate: 24)  // Standard frame rate, could be adjusted for performance
     streamSession = StreamSession(streamSessionConfig: config, deviceSelector: deviceSelector)
+
+    // Monitor device availability
+    deviceMonitorTask = Task { @MainActor in
+      for await device in deviceSelector.activeDeviceStream() {
+        self.hasActiveDevice = device != nil
+      }
+    }
 
     // Subscribe to session state changes using the DAT SDK listener pattern
     // State changes tell us when streaming starts, stops, or encounters issues
@@ -484,12 +450,12 @@ class StreamSessionViewModel: ObservableObject {
     do {
       let status = try await wearables.checkPermissionStatus(permission)
       if status == .granted {
-        startSession()
+        await startSession()
         return
       }
       let requestStatus = try await wearables.requestPermission(permission)
       if requestStatus == .granted {
-        startSession()
+        await startSession()
         return
       }
       showError("Permission denied")
@@ -498,15 +464,13 @@ class StreamSessionViewModel: ObservableObject {
     }
   }
 
-  func startSession() {
+  func startSession() async {
     // Reset to unlimited time when starting a new stream
     activeTimeLimit = .noLimit
     remainingTime = 0
     stopTimer()
 
-    Task {
-      await streamSession.start()
-    }
+    await streamSession.start()
   }
 
   private func showError(_ message: String) {
@@ -514,11 +478,9 @@ class StreamSessionViewModel: ObservableObject {
     showError = true
   }
 
-  func stopSession() {
+  func stopSession() async {
     stopTimer()
-    Task {
-      await streamSession.stop()
-    }
+    await streamSession.stop()
   }
 
   func dismissError() {
@@ -555,7 +517,7 @@ class StreamSessionViewModel: ObservableObject {
         remainingTime -= 1
       }
       if let self, !Task.isCancelled {
-        stopSession()
+        await stopSession()
       }
     }
   }
