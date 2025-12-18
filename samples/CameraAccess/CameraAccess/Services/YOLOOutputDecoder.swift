@@ -1,35 +1,36 @@
 /*
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- * All rights reserved.
+ * YOLOOutputDecoder.swift
+ * CameraAccess
  *
- * This source code is licensed under the license found in the
- * LICENSE file in the root directory of this source tree.
+ * Decodes raw YOLO model output tensors into bounding boxes and class predictions.
+ * Handles YOLO11 output format: [1 × (4 + num_classes) × num_predictions]
  */
 
-import CoreML
 import Foundation
+import CoreML
+import Vision
 
-/// Decodes raw YOLO11 tensor output into DetectedCard objects
-/// YOLO11 outputs a tensor of shape [1, numClasses+4, numBoxes] or transposed
-/// where each detection contains: [x_center, y_center, width, height, class_scores...]
+/// Decodes raw YOLO output tensors into DetectedCard results
 class YOLOOutputDecoder {
     
     static let shared = YOLOOutputDecoder()
     
-    /// Confidence threshold for detections (must be > 0.5 since sigmoid(0)=0.5)
-    var confidenceThreshold: Float = 0.6
+    /// Number of classes the model was trained on
+    let numClasses: Int = 52
+    
+    /// Input image size the model expects
+    let inputSize: CGFloat = 640.0
+    
+    /// Confidence threshold for detections
+    var confidenceThreshold: Float = 0.25
     
     /// IoU threshold for Non-Maximum Suppression
-    var iouThreshold: Float = 0.4
+    var iouThreshold: Float = 0.45
     
-    /// Minimum box size as fraction of image (filter tiny/garbage boxes)
-    var minBoxSize: Float = 0.02
+    /// Maximum number of detections to return
+    var maxDetections: Int = 20
     
-    /// Number of classes (52 poker cards)
-    private let numClasses = 52
-    
-    /// YOLO11 poker card class labels in Roboflow alphabetical order (uppercase)
-    /// Format: rank + suit (e.g., "10C" = 10 of clubs)
+    /// Default poker card labels (52 cards) - Roboflow alphabetical order
     private let classLabels: [String] = [
         "10C", "10D", "10H", "10S",
         "2C", "2D", "2H", "2S",
@@ -48,140 +49,117 @@ class YOLOOutputDecoder {
     
     private init() {}
     
-    /// Sigmoid activation function
-    private func sigmoid(_ x: Float) -> Float {
-        return 1.0 / (1.0 + exp(-x))
-    }
+    // MARK: - Decode
     
-    /// Decode YOLO output tensor into DetectedCard objects
+    /// Decode MLFeatureValue into DetectedCard array
     func decode(featureValue: MLFeatureValue) -> [DetectedCard] {
         guard let multiArray = featureValue.multiArrayValue else {
-            print("❌ YOLOOutputDecoder: No multiArray in feature value")
+            print("🔍 YOLO Decoder: No multiarray in observation")
             return []
         }
         
+        return decode(multiArray: multiArray)
+    }
+    
+    /// Decode raw MLMultiArray output
+    func decode(multiArray: MLMultiArray) -> [DetectedCard] {
         let shape = multiArray.shape.map { $0.intValue }
-        print("📐 YOLO output shape: \(shape)")
+        print("🔍 YOLO Decoder: MultiArray shape = \(shape)")
         
-        // YOLO11 output is typically [1, 56, 8400] or [1, 8400, 56]
-        // 56 = 4 bbox coords + 52 class scores
-        // 8400 = number of anchor boxes
-        
+        // Expected shape: [1, 56, 8400] for 52 classes
+        // 56 = 4 (x, y, w, h) + 52 (class scores)
         guard shape.count >= 2 else {
-            print("❌ YOLOOutputDecoder: Unexpected shape dimensions")
+            print("🔍 YOLO Decoder: Unexpected shape")
             return []
         }
         
-        // Determine orientation: [batch, features, boxes] or [batch, boxes, features]
-        let featuresDim: Int
-        let boxesDim: Int
-        let isTransposed: Bool
+        let numFeatures = shape.count == 3 ? shape[1] : shape[0]
+        let numPredictions = shape.count == 3 ? shape[2] : shape[1]
         
-        if shape.count == 3 {
-            // Shape is [batch, dim1, dim2]
-            if shape[1] == numClasses + 4 {
-                // [1, 56, 8400] - features first
-                featuresDim = shape[1]
-                boxesDim = shape[2]
-                isTransposed = false
-            } else if shape[2] == numClasses + 4 {
-                // [1, 8400, 56] - boxes first
-                featuresDim = shape[2]
-                boxesDim = shape[1]
-                isTransposed = true
-            } else {
-                print("❌ YOLOOutputDecoder: Cannot determine tensor orientation. Expected 56 features, got \(shape[1]) and \(shape[2])")
-                return []
-            }
-        } else {
-            print("❌ YOLOOutputDecoder: Expected 3D tensor, got \(shape.count)D")
-            return []
-        }
+        print("🔍 YOLO Decoder: \(numFeatures) features, \(numPredictions) predictions")
         
-        print("📊 Decoding \(boxesDim) boxes with \(featuresDim) features (transposed: \(isTransposed))")
+        // Extract raw detections
+        var rawDetections: [(box: CGRect, classId: Int, confidence: Float)] = []
         
-        var rawDetections: [(box: CGRect, classIndex: Int, confidence: Float)] = []
+        let pointer = UnsafeMutablePointer<Float>(OpaquePointer(multiArray.dataPointer))
+        let strides = multiArray.strides.map { $0.intValue }
         
-        let pointer = multiArray.dataPointer.assumingMemoryBound(to: Float.self)
-        
-        var globalMaxScore: Float = 0
-        var globalMaxRawScore: Float = -Float.infinity
-        
-        for boxIdx in 0..<boxesDim {
-            // Extract bbox coordinates and class scores for this box
-            var x: Float = 0, y: Float = 0, w: Float = 0, h: Float = 0
-            var classScores: [Float] = Array(repeating: 0, count: numClasses)
+        for i in 0..<numPredictions {
+            // Get bounding box (x_center, y_center, width, height)
+            let xCenter: Float
+            let yCenter: Float
+            let width: Float
+            let height: Float
             
-            for featIdx in 0..<featuresDim {
-                let value: Float
-                if isTransposed {
-                    // [1, boxes, features]
-                    value = pointer[boxIdx * featuresDim + featIdx]
-                } else {
-                    // [1, features, boxes]
-                    value = pointer[featIdx * boxesDim + boxIdx]
-                }
-                
-                if featIdx == 0 { x = value }
-                else if featIdx == 1 { y = value }
-                else if featIdx == 2 { w = value }
-                else if featIdx == 3 { h = value }
-                else if featIdx - 4 < numClasses {
-                    // Apply sigmoid to convert logits to probabilities
-                    classScores[featIdx - 4] = sigmoid(value)
-                    if value > globalMaxRawScore { globalMaxRawScore = value }
-                }
+            if shape.count == 3 {
+                // Shape [1, 56, 8400]
+                xCenter = pointer[0 * strides[1] + i]
+                yCenter = pointer[1 * strides[1] + i]
+                width = pointer[2 * strides[1] + i]
+                height = pointer[3 * strides[1] + i]
+            } else {
+                // Shape [56, 8400]
+                xCenter = pointer[0 * strides[0] + i]
+                yCenter = pointer[1 * strides[0] + i]
+                width = pointer[2 * strides[0] + i]
+                height = pointer[3 * strides[0] + i]
             }
             
             // Find best class
-            var maxScore: Float = 0
-            var maxClassIndex = 0
-            for (idx, score) in classScores.enumerated() {
-                if score > maxScore {
-                    maxScore = score
-                    maxClassIndex = idx
+            var bestClassId = 0
+            var bestScore: Float = 0
+            
+            for c in 0..<numClasses {
+                let score: Float
+                if shape.count == 3 {
+                    score = pointer[(4 + c) * strides[1] + i]
+                } else {
+                    score = pointer[(4 + c) * strides[0] + i]
+                }
+                
+                if score > bestScore {
+                    bestScore = score
+                    bestClassId = c
                 }
             }
             
-            if maxScore > globalMaxScore { globalMaxScore = maxScore }
+            // Filter by confidence
+            guard bestScore >= confidenceThreshold else { continue }
             
-            // Apply confidence threshold and box size validation
-            if maxScore >= confidenceThreshold {
-                // Convert center-format to corner-format
-                // (YOLO outputs are in pixel coords based on 640x640 input)
-                let inputSize: Float = 640.0
-                let normalizedW = w / inputSize
-                let normalizedH = h / inputSize
-                
-                // Filter out tiny boxes (likely garbage detections)
-                guard normalizedW >= minBoxSize && normalizedH >= minBoxSize else { continue }
-                
-                // Filter out invalid/huge boxes
-                guard normalizedW <= 1.0 && normalizedH <= 1.0 else { continue }
-                guard x >= 0 && y >= 0 && x <= inputSize && y <= inputSize else { continue }
-                
-                let box = CGRect(
-                    x: CGFloat((x - w / 2) / inputSize),
-                    y: CGFloat((y - h / 2) / inputSize),
-                    width: CGFloat(normalizedW),
-                    height: CGFloat(normalizedH)
-                )
-                rawDetections.append((box: box, classIndex: maxClassIndex, confidence: maxScore))
-            }
+            // Convert to normalized coordinates (0-1)
+            let x = CGFloat(xCenter / Float(inputSize))
+            let y = CGFloat(yCenter / Float(inputSize))
+            let w = CGFloat(width / Float(inputSize))
+            let h = CGFloat(height / Float(inputSize))
+            
+            // Filter out invalid boxes
+            guard w > 0.01 && h > 0.01 && w < 1.0 && h < 1.0 else { continue }
+            guard x > 0 && y > 0 && x < 1.0 && y < 1.0 else { continue }
+            
+            // Convert from center format to corner format
+            let box = CGRect(
+                x: x - w / 2,
+                y: y - h / 2,
+                width: w,
+                height: h
+            )
+            
+            rawDetections.append((box: box, classId: bestClassId, confidence: bestScore))
         }
         
-        print("📊 Max raw score: \(globalMaxRawScore), Max sigmoid score: \(globalMaxScore)")
-        print("📊 Found \(rawDetections.count) detections above threshold \(confidenceThreshold)")
+        print("🔍 YOLO Decoder: \(rawDetections.count) raw detections above threshold")
         
         // Apply Non-Maximum Suppression
-        let nmsDetections = applyNMS(rawDetections)
+        let nmsDetections = nonMaxSuppression(rawDetections)
         
-        print("📊 After NMS: \(nmsDetections.count) detections")
+        print("🔍 YOLO Decoder: \(nmsDetections.count) after NMS")
         
         // Convert to DetectedCard
-        return nmsDetections.compactMap { detection in
-            guard detection.classIndex < classLabels.count else { return nil }
-            let label = classLabels[detection.classIndex]
+        return nmsDetections.prefix(maxDetections).compactMap { detection in
+            let label = detection.classId < classLabels.count
+                ? classLabels[detection.classId]
+                : "class_\(detection.classId)"
+            
             guard let card = PokerCard.fromYOLOLabel(label) else { return nil }
             
             print("🔍 Decoded: \(card.displayName) (\(Int(detection.confidence * 100))%)")
@@ -189,36 +167,28 @@ class YOLOOutputDecoder {
             return DetectedCard(
                 card: card,
                 confidence: detection.confidence,
-                boundingBox: detection.box  // Already normalized to 0-1
+                boundingBox: detection.box
             )
         }
     }
     
-    /// Apply Non-Maximum Suppression to filter overlapping boxes
-    private func applyNMS(_ detections: [(box: CGRect, classIndex: Int, confidence: Float)]) -> [(box: CGRect, classIndex: Int, confidence: Float)] {
-        guard !detections.isEmpty else { return [] }
+    // MARK: - NMS
+    
+    private func nonMaxSuppression(_ detections: [(box: CGRect, classId: Int, confidence: Float)]) -> [(box: CGRect, classId: Int, confidence: Float)] {
+        // Sort by confidence (highest first)
+        var sorted = detections.sorted { $0.confidence > $1.confidence }
+        var kept: [(box: CGRect, classId: Int, confidence: Float)] = []
         
-        // Sort by confidence (descending)
-        let sorted = detections.sorted { $0.confidence > $1.confidence }
-        
-        var kept: [(box: CGRect, classIndex: Int, confidence: Float)] = []
-        var suppressed = Set<Int>()
-        
-        for (i, detection) in sorted.enumerated() {
-            guard !suppressed.contains(i) else { continue }
+        while !sorted.isEmpty {
+            let best = sorted.removeFirst()
+            kept.append(best)
             
-            kept.append(detection)
-            
-            // Suppress overlapping boxes with same class
-            for j in (i + 1)..<sorted.count {
-                guard !suppressed.contains(j) else { continue }
-                
-                if sorted[j].classIndex == detection.classIndex {
-                    let iou = calculateIoU(detection.box, sorted[j].box)
-                    if iou > iouThreshold {
-                        suppressed.insert(j)
-                    }
+            // Remove overlapping boxes of the same class
+            sorted = sorted.filter { detection in
+                if detection.classId != best.classId {
+                    return true
                 }
+                return iou(best.box, detection.box) < iouThreshold
             }
         }
         
@@ -226,15 +196,12 @@ class YOLOOutputDecoder {
     }
     
     /// Calculate Intersection over Union
-    private func calculateIoU(_ box1: CGRect, _ box2: CGRect) -> Float {
-        let intersection = box1.intersection(box2)
-        
-        guard !intersection.isNull else { return 0 }
+    private func iou(_ a: CGRect, _ b: CGRect) -> Float {
+        let intersection = a.intersection(b)
+        if intersection.isNull { return 0 }
         
         let intersectionArea = intersection.width * intersection.height
-        let unionArea = box1.width * box1.height + box2.width * box2.height - intersectionArea
-        
-        guard unionArea > 0 else { return 0 }
+        let unionArea = a.width * a.height + b.width * b.height - intersectionArea
         
         return Float(intersectionArea / unionArea)
     }

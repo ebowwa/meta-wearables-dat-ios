@@ -1,10 +1,3 @@
-/*
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- * All rights reserved.
- *
- * This source code is licensed under the license found in the
- * LICENSE file in the root directory of this source tree.
- */
 
 import CoreML
 import UIKit
@@ -24,6 +17,12 @@ class PokerDetectionService {
     
     /// Error from loading the model, if any
     private(set) var loadError: Error?
+    
+    /// Card tracker for temporal stability
+    private let cardTracker = CardTracker()
+    
+    /// Whether to use card tracking (temporal voting)
+    var useTracking = true
     
     private var model: VNCoreMLModel?
     
@@ -110,8 +109,10 @@ class PokerDetectionService {
                     // Handle raw YOLO output using custom decoder
                     if let featureResults = request.results as? [VNCoreMLFeatureValueObservation],
                        let firstFeature = featureResults.first {
-                        let decodedCards = YOLOOutputDecoder.shared.decode(featureValue: firstFeature.featureValue)
-                        continuation.resume(returning: decodedCards)
+                        let rawCards = YOLOOutputDecoder.shared.decode(featureValue: firstFeature.featureValue)
+                        // Apply tracking for temporal stability if enabled
+                        let stableCards = self.useTracking ? self.cardTracker.process(rawCards) : rawCards
+                        continuation.resume(returning: stableCards)
                         return
                     }
                     continuation.resume(returning: [])

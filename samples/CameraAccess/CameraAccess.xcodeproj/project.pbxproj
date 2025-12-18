@@ -40,6 +40,7 @@
 		AA0000072F00000000000004 /* PokerDetectionOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000082F00000000000004 /* PokerDetectionOverlay.swift */; };
 		AA00000C2F00000000000008 /* YOLO11PokerInt8LUT.mlpackage in Resources */ = {isa = PBXBuildFile; fileRef = AA00000B2F00000000000007 /* YOLO11PokerInt8LUT.mlpackage */; };
 		AA00000D2F00000000000009 /* YOLOOutputDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000E2F0000000000000A /* YOLOOutputDecoder.swift */; };
+		AA00000F2F0000000000000B /* CardTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000102F0000000000000C /* CardTracker.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -100,6 +101,7 @@
 		AA0000082F00000000000004 /* PokerDetectionOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokerDetectionOverlay.swift; sourceTree = "<group>"; };
 		AA00000B2F00000000000007 /* YOLO11PokerInt8LUT.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = YOLO11PokerInt8LUT.mlpackage; sourceTree = "<group>"; };
 		AA00000E2F0000000000000A /* YOLOOutputDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YOLOOutputDecoder.swift; sourceTree = "<group>"; };
+		AA0000102F0000000000000C /* CardTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardTracker.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -245,6 +247,7 @@
 				AA0000042F00000000000002 /* PokerHandAnalyzer.swift */,
 				AA0000062F00000000000003 /* PokerDetectionService.swift */,
 				AA00000E2F0000000000000A /* YOLOOutputDecoder.swift */,
+				AA0000102F0000000000000C /* CardTracker.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -384,6 +387,7 @@
 				AA0000052F00000000000003 /* PokerDetectionService.swift in Sources */,
 				AA0000072F00000000000004 /* PokerDetectionOverlay.swift in Sources */,
 				AA00000D2F00000000000009 /* YOLOOutputDecoder.swift in Sources */,
+				AA00000F2F0000000000000B /* CardTracker.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
