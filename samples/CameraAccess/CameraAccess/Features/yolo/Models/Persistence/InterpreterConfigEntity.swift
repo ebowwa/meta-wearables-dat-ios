@@ -41,7 +41,7 @@ final class InterpreterConfigEntity {
     // MARK: - Model-Specific Settings
     
     /// JSON blob for model-specific interpreter settings
-    /// e.g., for poker: {"showHandRanking": true, "autoAnalyze": true}
+    /// e.g., for faceClassification: {"showAgeEstimate": true, "autoAnalyze": true}
     var customSettingsJSON: String?
     
     // MARK: - Relationship

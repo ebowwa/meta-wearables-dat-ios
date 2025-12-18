@@ -65,8 +65,6 @@ struct DetectionBoxView: View {
             return .blue
         } else if label.contains("dog") || label.contains("cat") || label.contains("bird") || label.contains("animal") {
             return .orange
-        } else if label.contains("card") || label.contains("poker") {
-            return .red
         } else {
             return .purple
         }

@@ -73,7 +73,7 @@ class YOLOModelManager: ObservableObject {
         let local = discoverLocalModels()
         for model in local {
             // Extract the base name without prefix to check if this is a downloaded remote model
-            let baseName = model.name // e.g. "featured_yolo11_poker" from "featured_yolo11_poker.mlmodelc"
+            let baseName = model.name // e.g. "featured_yolo11_model" from "featured_yolo11_model.mlmodelc"
             
             // Skip if this file corresponds to an existing model (e.g., downloaded remote)
             let existsInDb = dbModels.contains(where: { 

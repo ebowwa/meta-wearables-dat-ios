@@ -343,14 +343,6 @@ final class YOLOPersistenceManager {
 /// Featured models to seed on first launch
 enum FeaturedModels {
     static let all: [YOLOModelInfo] = [
-        YOLOModelInfo(
-            id: "featured_yolo11_poker",
-            name: "YOLO11 Poker Detection",
-            description: "Detects 52 playing cards in real-time",
-            source: .remote(url: "https://github.com/ebowwa/meta-wearables-dat-ios/releases/download/poker-model-v1.0/YOLO11PokerInt8LUT.mlpackage.zip"),
-            version: "1.0",
-            modelType: .poker,
-            sizeBytes: 4_800_000
-        )
+        // No featured remote models on data-collection branch
     ]
 }

@@ -28,14 +28,12 @@ enum YOLOModelSource: Codable, Equatable {
 /// Type of YOLO model - determines which interpreter to use
 enum YOLOModelType: String, Codable, Equatable, CaseIterable {
     case generic              // Standard YOLO (COCO, general object detection)
-    case poker                // Playing card detection (52 cards)
     case faceClassification   // Face attribute detection
     case custom               // User-defined or unknown
     
     var displayName: String {
         switch self {
         case .generic: return "Object Detection"
-        case .poker: return "Poker Cards"
         case .faceClassification: return "Face Classification"
         case .custom: return "Custom"
         }
@@ -44,7 +42,6 @@ enum YOLOModelType: String, Codable, Equatable, CaseIterable {
     var icon: String {
         switch self {
         case .generic: return "cube.box"
-        case .poker: return "suit.spade.fill"
         case .faceClassification: return "face.smiling"
         case .custom: return "gearshape"
         }

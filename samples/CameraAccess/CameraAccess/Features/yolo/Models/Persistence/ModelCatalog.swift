@@ -30,7 +30,7 @@ final class ModelCatalog {
     
     // MARK: - Model Type
     
-    /// Type of model: "generic", "poker", "faceClassification", "custom"
+    /// Type of model: "generic", "faceClassification", "custom"
     var modelTypeRaw: String
     
     var modelType: YOLOModelType {

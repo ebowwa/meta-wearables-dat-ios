@@ -17,15 +17,12 @@ final class InterpreterRegistry {
     // MARK: - Registered Interpreters
     
     private lazy var passthrough = PassthroughInterpreter()
-    private lazy var poker = PokerHandInterpreter()
     
     // MARK: - Factory
     
     /// Get the appropriate interpreter for a model type
     func interpreter(for modelType: YOLOModelType) -> any DetectionInterpreter {
         switch modelType {
-        case .poker:
-            return poker
         case .generic, .faceClassification, .custom:
             return passthrough
         }
@@ -40,6 +37,6 @@ final class InterpreterRegistry {
     
     /// All registered interpreters
     var allInterpreters: [any DetectionInterpreter] {
-        [passthrough, poker]
+        [passthrough]
     }
 }
