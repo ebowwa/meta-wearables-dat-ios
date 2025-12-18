@@ -2,7 +2,7 @@
 //  TrainingOverlay.swift
 //  CameraAccess
 //
-//  UI for training and inference with on-device KNN
+//  Minimal UI for training and inference with on-device KNN
 //
 
 import SwiftUI
@@ -10,88 +10,99 @@ import SwiftUI
 struct TrainingOverlay: View {
     @ObservedObject var trainingService: TrainingService
     
-    @State private var selectedLabel: String = ""
-    @State private var customLabel: String = ""
-    @State private var showingLabelPicker = false
-    @State private var showingStats = false
+    @State private var labelInput: String = ""
     @State private var feedbackMessage: String?
+    @State private var showingStats = false
     
-    let onCapture: (String) -> Void  // Called with label when capture requested
+    let onCapture: (String) -> Void
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                // Mode indicator at top
+        ZStack {
+            // Train mode: minimal input at bottom
+            if trainingService.mode == .training {
                 VStack {
-                    HStack {
-                        // Mode toggle
-                        Picker("Mode", selection: $trainingService.mode) {
-                            Text("Train").tag(TrainingMode.training)
-                            Text("Test").tag(TrainingMode.inference)
+                    Spacer()
+                    
+                    // Simple capture bar
+                    HStack(spacing: 12) {
+                        // Label input
+                        TextField("Label...", text: $labelInput)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 120)
+                        
+                        // Capture button
+                        Button(action: capture) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 44))
+                                .foregroundColor(labelInput.isEmpty ? .gray : .blue)
                         }
-                        .pickerStyle(.segmented)
-                        .frame(width: 150)
+                        .disabled(labelInput.isEmpty)
                         
-                        Spacer()
+                        // Mode toggle
+                        Button(action: { trainingService.mode = .inference }) {
+                            Image(systemName: "play.circle")
+                                .font(.system(size: 32))
+                                .foregroundColor(.green)
+                        }
                         
-                        // Stats badge
+                        // Stats
                         Button(action: { showingStats = true }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "brain.head.profile")
-                                Text("\(trainingService.trainingSamples)")
-                            }
-                            .font(.caption)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(.ultraThinMaterial)
-                            .cornerRadius(15)
+                            Text("\(trainingService.trainingSamples)")
+                                .font(.caption.bold())
+                                .padding(8)
+                                .background(.ultraThinMaterial)
+                                .cornerRadius(8)
                         }
                     }
                     .padding()
-                    
-                    Spacer()
+                    .background(.ultraThinMaterial)
                 }
-                
-                // Prediction result (inference mode)
-                if trainingService.mode == .inference,
-                   let prediction = trainingService.lastPrediction {
-                    VStack {
-                        PredictionBanner(prediction: prediction)
-                        Spacer()
-                    }
-                    .padding(.top, 60)
-                }
-                
-                // Feedback message
-                if let message = feedbackMessage {
-                    VStack {
-                        Spacer()
-                        Text(message)
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .padding()
-                            .background(Color.green.opacity(0.9))
-                            .cornerRadius(10)
-                            .padding(.bottom, 160)
-                    }
-                    .animation(.easeInOut, value: feedbackMessage)
-                }
-                
-                // Bottom controls
+            }
+            
+            // Test mode: prediction display
+            if trainingService.mode == .inference {
                 VStack {
+                    // Prediction result
+                    if let prediction = trainingService.lastPrediction {
+                        HStack {
+                            Text(prediction.label)
+                                .font(.system(size: 32, weight: .bold))
+                            Text("\(Int(prediction.confidence * 100))%")
+                                .foregroundColor(prediction.isKnown ? .green : .orange)
+                        }
+                        .padding()
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(12)
+                    }
+                    
                     Spacer()
                     
-                    if trainingService.mode == .training {
-                        TrainingControls(
-                            selectedLabel: $selectedLabel,
-                            customLabel: $customLabel,
-                            cardLabels: trainingService.cardLabels,
-                            onCapture: captureWithLabel
-                        )
-                    } else {
-                        InferenceControls(onPredict: { /* handled by stream */ })
+                    // Back to train
+                    Button(action: { trainingService.mode = .training }) {
+                        HStack {
+                            Image(systemName: "pencil")
+                            Text("Train")
+                        }
+                        .padding()
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(10)
                     }
+                    .padding(.bottom)
                 }
+                .padding(.top, 50)
+            }
+            
+            // Feedback toast
+            if let message = feedbackMessage {
+                VStack {
+                    Text(message)
+                        .padding(8)
+                        .background(Color.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                    Spacer()
+                }
+                .padding(.top, 100)
             }
         }
         .sheet(isPresented: $showingStats) {
@@ -99,192 +110,18 @@ struct TrainingOverlay: View {
         }
     }
     
-    private func captureWithLabel() {
-        let label = customLabel.isEmpty ? selectedLabel : customLabel
-        guard !label.isEmpty else { return }
+    private func capture() {
+        guard !labelInput.isEmpty else { return }
+        onCapture(labelInput)
+        feedbackMessage = "✓ \(labelInput)"
+        let captured = labelInput
+        labelInput = ""
         
-        onCapture(label)
-        
-        // Show feedback
-        feedbackMessage = "Added: \(label)"
         Task {
-            try? await Task.sleep(nanoseconds: 1_500_000_000)
-            feedbackMessage = nil
-        }
-        
-        // Clear custom label but keep selected
-        customLabel = ""
-    }
-}
-
-// MARK: - Subviews
-
-struct PredictionBanner: View {
-    let prediction: KNNResult
-    
-    var body: some View {
-        VStack(spacing: 4) {
-            HStack {
-                Text(prediction.label)
-                    .font(.system(size: 36, weight: .bold))
-                
-                Text("\(Int(prediction.confidence * 100))%")
-                    .font(.title2)
-                    .foregroundColor(prediction.isKnown ? .green : .orange)
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            if feedbackMessage == "✓ \(captured)" {
+                feedbackMessage = nil
             }
-            
-            if !prediction.isKnown {
-                Text("Unknown - Train this!")
-                    .font(.caption)
-                    .foregroundColor(.orange)
-            }
-        }
-        .padding()
-        .background(.ultraThinMaterial)
-        .cornerRadius(15)
-    }
-}
-
-struct TrainingControls: View {
-    @Binding var selectedLabel: String
-    @Binding var customLabel: String
-    let cardLabels: [String]
-    let onCapture: () -> Void
-    
-    @State private var showingPicker = false
-    
-    var body: some View {
-        VStack(spacing: 12) {
-            // Quick card buttons (subset)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    // Show first 13 (hearts) as quick options
-                    ForEach(Array(cardLabels.prefix(13)), id: \.self) { label in
-                        Button(action: { selectedLabel = label }) {
-                            Text(label)
-                                .font(.system(size: 16, weight: .medium))
-                                .frame(width: 44, height: 44)
-                                .background(selectedLabel == label ? Color.blue : Color.white.opacity(0.2))
-                                .foregroundColor(selectedLabel == label ? .white : .white)
-                                .cornerRadius(8)
-                        }
-                    }
-                    
-                    // More button
-                    Button(action: { showingPicker = true }) {
-                        Image(systemName: "ellipsis")
-                            .font(.title3)
-                            .frame(width: 44, height: 44)
-                            .background(Color.white.opacity(0.2))
-                            .foregroundColor(.white)
-                            .cornerRadius(8)
-                    }
-                }
-                .padding(.horizontal)
-            }
-            
-            // Custom label input
-            HStack {
-                TextField("Custom label...", text: $customLabel)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(maxWidth: 200)
-                
-                // Capture button
-                Button(action: onCapture) {
-                    ZStack {
-                        Circle()
-                            .stroke(Color.white, lineWidth: 3)
-                            .frame(width: 65, height: 65)
-                        
-                        Circle()
-                            .fill(canCapture ? Color.blue : Color.gray)
-                            .frame(width: 55, height: 55)
-                        
-                        Image(systemName: "plus")
-                            .font(.title)
-                            .foregroundColor(.white)
-                    }
-                }
-                .disabled(!canCapture)
-            }
-            .padding(.horizontal)
-            .padding(.bottom, 30)
-        }
-        .background(
-            LinearGradient(
-                colors: [.clear, .black.opacity(0.7)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
-        .sheet(isPresented: $showingPicker) {
-            CardLabelPicker(labels: cardLabels, selected: $selectedLabel)
-        }
-    }
-    
-    private var canCapture: Bool {
-        !selectedLabel.isEmpty || !customLabel.isEmpty
-    }
-}
-
-struct InferenceControls: View {
-    let onPredict: () -> Void
-    
-    var body: some View {
-        VStack {
-            Text("Point at a card to classify")
-                .font(.headline)
-                .foregroundColor(.white)
-                .padding()
-                .background(.ultraThinMaterial)
-                .cornerRadius(10)
-        }
-        .padding(.bottom, 50)
-    }
-}
-
-struct CardLabelPicker: View {
-    let labels: [String]
-    @Binding var selected: String
-    @Environment(\.dismiss) var dismiss
-    
-    let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 4)
-    
-    var body: some View {
-        NavigationView {
-            ScrollView {
-                LazyVGrid(columns: columns, spacing: 10) {
-                    ForEach(labels, id: \.self) { label in
-                        Button(action: {
-                            selected = label
-                            dismiss()
-                        }) {
-                            Text(label)
-                                .font(.system(size: 20, weight: .medium))
-                                .frame(width: 60, height: 60)
-                                .background(suitColor(for: label))
-                                .foregroundColor(.white)
-                                .cornerRadius(10)
-                        }
-                    }
-                }
-                .padding()
-            }
-            .navigationTitle("Select Card")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Cancel") { dismiss() }
-                }
-            }
-        }
-    }
-    
-    private func suitColor(for label: String) -> Color {
-        if label.contains("♥") || label.contains("♦") {
-            return .red
-        } else {
-            return .black
         }
     }
 }
@@ -296,59 +133,40 @@ struct TrainingStatsView: View {
     var body: some View {
         NavigationView {
             List {
-                Section("Model Statistics") {
-                    LabeledContent("Total Samples", value: "\(trainingService.trainingSamples)")
-                    LabeledContent("Trained Classes", value: "\(trainingService.trainedClasses.count)")
-                    LabeledContent("k (neighbors)", value: "\(trainingService.knn.k)")
+                Section("Stats") {
+                    LabeledContent("Samples", value: "\(trainingService.trainingSamples)")
+                    LabeledContent("Classes", value: "\(trainingService.trainedClasses.count)")
                 }
                 
-                Section("Samples Per Class") {
-                    ForEach(trainingService.trainedClasses, id: \.self) { label in
-                        HStack {
-                            Text(label)
-                                .font(.headline)
-                            Spacer()
-                            Text("\(trainingService.knn.samplesPerClass[label] ?? 0)")
-                                .foregroundColor(.secondary)
+                if !trainingService.trainedClasses.isEmpty {
+                    Section("Classes") {
+                        ForEach(trainingService.trainedClasses, id: \.self) { label in
+                            HStack {
+                                Text(label)
+                                Spacer()
+                                Text("\(trainingService.knn.samplesPerClass[label] ?? 0)")
+                                    .foregroundColor(.secondary)
+                            }
                         }
                     }
                 }
                 
-                Section("Actions") {
-                    Button("Export Model") {
-                        shareModel()
-                    }
-                    
-                    Button("Reset Model", role: .destructive) {
+                Section {
+                    Button("Reset", role: .destructive) {
                         trainingService.resetModel()
                     }
                 }
             }
-            .navigationTitle("Training Stats")
+            .navigationTitle("Training")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") { dismiss() }
-                }
+                Button("Done") { dismiss() }
             }
-        }
-    }
-    
-    private func shareModel() {
-        let path = trainingService.getModelPath()
-        let activityVC = UIActivityViewController(activityItems: [path], applicationActivities: nil)
-        
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let window = windowScene.windows.first,
-           let rootVC = window.rootViewController {
-            rootVC.present(activityVC, animated: true)
         }
     }
 }
 
 #Preview {
-    TrainingOverlay(trainingService: TrainingService()) { label in
-        print("Capture: \(label)")
-    }
-    .background(Color.black)
+    TrainingOverlay(trainingService: TrainingService()) { _ in }
+        .background(Color.black)
 }
