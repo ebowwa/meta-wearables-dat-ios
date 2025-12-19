@@ -37,6 +37,7 @@
 		YOLO3A3A3A3A3A3A3A3A3A3A /* YOLOv3Int8LUT.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = YOLO3F3F3F3F3F3F3F3F3F3F /* YOLOv3Int8LUT.mlmodel */; };
 		YOLO7777777777777777 /* ModelPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = YOLO8888888888888888 /* ModelPickerView.swift */; };
 		YOLO9999999999999999 /* DetectionOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = YOLOAAAAAAAAAAAAAAAA /* DetectionOverlayView.swift */; };
+		PHOTO_TRAIN_BUILD_001 /* PhotoTrainingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = PHOTO_TRAIN_FILE_001 /* PhotoTrainingView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -94,11 +95,14 @@
 		YOLO3F3F3F3F3F3F3F3F3F3F /* YOLOv3Int8LUT.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = YOLOv3Int8LUT.mlmodel; sourceTree = "<group>"; };
 		YOLO8888888888888888 /* ModelPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelPickerView.swift; sourceTree = "<group>"; };
 		YOLOAAAAAAAAAAAAAAAA /* DetectionOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectionOverlayView.swift; sourceTree = "<group>"; };
+		PHOTO_TRAIN_FILE_001 /* PhotoTrainingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoTrainingView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		76C6350F2EF20C850039FF8F /* yolo */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = yolo; sourceTree = "<group>"; };
 		E699CC962E8150670052C240 /* CameraAccessTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = CameraAccessTests; sourceTree = "<group>"; };
+		EMBED00010010010010001 /* embeddings */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = embeddings; sourceTree = "<group>"; };
+		SEGMENT0001001001001001 /* segmentation */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = segmentation; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -137,6 +141,8 @@
 		76AB14C52EF224EF00B3BFD0 /* Features */ = {
 			isa = PBXGroup;
 			children = (
+				EMBED00010010010010001 /* embeddings */,
+				SEGMENT0001001001001001 /* segmentation */,
 				76C6350F2EF20C850039FF8F /* yolo */,
 			);
 			path = Features;
@@ -178,6 +184,7 @@
 				8FD96B722E6F0A9800F56AB1 /* HomeScreenView.swift */,
 				8FFD605F2E84A2F70035E446 /* MainAppView.swift */,
 				8FD96B742E6F0A9800F56AB1 /* PhotoPreviewView.swift */,
+				PHOTO_TRAIN_FILE_001 /* PhotoTrainingView.swift */,
 				8FFD60532E849D0D0035E446 /* RegistrationView.swift */,
 				8FD96B752E6F0A9800F56AB1 /* StreamSessionView.swift */,
 				E6A188472EB918740097D0E1 /* StreamView.swift */,
@@ -260,6 +267,8 @@
 			);
 			fileSystemSynchronizedGroups = (
 				76C6350F2EF20C850039FF8F /* yolo */,
+				EMBED00010010010010001 /* embeddings */,
+				SEGMENT0001001001001001 /* segmentation */,
 			);
 			name = CameraAccess;
 			productName = CameraAccess;
@@ -377,6 +386,7 @@
 				YOLO3A3A3A3A3A3A3A3A3A3A /* YOLOv3Int8LUT.mlmodel in Sources */,
 				YOLO7777777777777777 /* ModelPickerView.swift in Sources */,
 				YOLO9999999999999999 /* DetectionOverlayView.swift in Sources */,
+				PHOTO_TRAIN_BUILD_001 /* PhotoTrainingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

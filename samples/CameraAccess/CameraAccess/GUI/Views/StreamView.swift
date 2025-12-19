@@ -37,13 +37,13 @@ struct StreamView: View {
               .frame(width: geometry.size.width, height: geometry.size.height)
               .clipped()
             
-            // YOLO Detection overlay
-            if viewModel.isDetectionEnabled && !viewModel.currentDetections.isEmpty {
-              DetectionOverlayView(
-                detections: viewModel.currentDetections,
-                viewSize: geometry.size
-              )
-            }
+            // NOTE: DetectionOverlayView was removed here because TrainingOverlay 
+            // (below) already renders tappable detection boxes for the same detections.
+            // Having both caused duplicate bounding boxes/labels per object.
+            // TrainingOverlay is preferred as it supports:
+            // - Tap-to-train interactions
+            // - KNN prediction labels
+            // - Manual bounding box drawing
           }
         }
         .edgesIgnoringSafeArea(.all)
@@ -87,12 +87,16 @@ struct StreamView: View {
       }
       
       // Training overlay - always visible during streaming
-      TrainingOverlay(
-        trainingService: viewModel.trainingService,
-        detections: viewModel.currentDetections,
-        currentFrame: viewModel.currentVideoFrame
-      ) { label in
-        viewModel.captureWithLabel(label)
+      GeometryReader { geometry in
+        TrainingOverlay(
+          trainingService: viewModel.trainingService,
+          detections: viewModel.currentDetections,
+          currentFrame: viewModel.currentVideoFrame,
+          viewSize: geometry.size,
+          detectionPredictions: viewModel.detectionPredictions
+        ) { label, boundingBox in
+          viewModel.captureWithLabel(label, boundingBox: boundingBox)
+        }
       }
     }
     .onDisappear {
@@ -102,7 +106,24 @@ struct StreamView: View {
         }
       }
     }
-    // Show captured photos from DAT SDK in a preview sheet
+    // Photo training workflow - primary path for camera button
+    // Shows high-res photo with YOLO detections, allows tap-to-train
+    .sheet(isPresented: $viewModel.showPhotoTraining) {
+      if let photo = viewModel.photoForTraining {
+        PhotoTrainingView(
+          photo: photo,
+          detections: viewModel.photoDetections,
+          trainingService: viewModel.trainingService,
+          onDismiss: {
+            viewModel.dismissPhotoTraining()
+          },
+          onSaveToPhotos: {
+            viewModel.savePhotoToLibrary()
+          }
+        )
+      }
+    }
+    // Legacy photo preview (share sheet only) - can be triggered programmatically
     .sheet(isPresented: $viewModel.showPhotoPreview) {
       if let photo = viewModel.capturedPhoto {
         PhotoPreviewView(
@@ -123,6 +144,8 @@ struct StreamView: View {
 // Extracted controls for clarity
 struct ControlsView: View {
   @ObservedObject var viewModel: StreamSessionViewModel
+  @State private var showResetConfirmation = false
+  
   var body: some View {
     // Controls row
     HStack(spacing: 8) {
@@ -136,6 +159,26 @@ struct ControlsView: View {
         }
       }
 
+      // Reset training button (only shows if there's training data)
+      if viewModel.trainingService.trainingSamples > 0 {
+        CircleButton(
+          icon: "trash.fill",
+          text: nil,
+          backgroundColor: .red.opacity(0.8),
+          foregroundColor: .white
+        ) {
+          showResetConfirmation = true
+        }
+        .alert("Reset Training Data?", isPresented: $showResetConfirmation) {
+          Button("Cancel", role: .cancel) { }
+          Button("Reset", role: .destructive) {
+            viewModel.trainingService.resetModel()
+          }
+        } message: {
+          Text("This will delete all \(viewModel.trainingService.trainingSamples) training samples. This cannot be undone.")
+        }
+      }
+
       // Timer button
       CircleButton(
         icon: "timer",
@@ -146,7 +189,11 @@ struct ControlsView: View {
       }
 
       // Photo button
-      CircleButton(icon: "camera.fill", text: nil) {
+      CircleButton(
+        icon: "camera.fill",
+        text: nil,
+        isDisabled: viewModel.streamingStatus != .streaming
+      ) {
         viewModel.capturePhoto()
       }
     }

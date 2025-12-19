@@ -30,12 +30,14 @@ enum YOLOModelType: String, Codable, Equatable, CaseIterable {
     case generic              // Standard YOLO (COCO, general object detection)
     case faceClassification   // Face attribute detection
     case custom               // User-defined or unknown
+    case segmentation         // Semantic segmentation (MobileViT, DeepLabV3, etc.)
     
     var displayName: String {
         switch self {
         case .generic: return "Object Detection"
         case .faceClassification: return "Face Classification"
         case .custom: return "Custom"
+        case .segmentation: return "Segmentation"
         }
     }
     
@@ -44,6 +46,7 @@ enum YOLOModelType: String, Codable, Equatable, CaseIterable {
         case .generic: return "cube.box"
         case .faceClassification: return "face.smiling"
         case .custom: return "gearshape"
+        case .segmentation: return "square.on.square.dashed"
         }
     }
 }

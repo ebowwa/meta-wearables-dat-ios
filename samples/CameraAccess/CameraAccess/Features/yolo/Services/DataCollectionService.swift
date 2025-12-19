@@ -84,18 +84,18 @@ class DataCollectionService: ObservableObject {
     private func loadModel() {
         Task {
             do {
-                // Try to load base YOLO11n
-                guard let modelURL = Bundle.main.url(forResource: "yolo11n", withExtension: "mlmodelc")
-                    ?? Bundle.main.url(forResource: "yolo11n", withExtension: "mlpackage") else {
-                    print("❌ Base YOLO model not found")
+                // Try to load YOLOv3Int8LUT model (80 COCO classes)
+                guard let modelURL = Bundle.main.url(forResource: "YOLOv3Int8LUT", withExtension: "mlmodelc")
+                    ?? Bundle.main.url(forResource: "YOLOv3Int8LUT", withExtension: "mlmodel") else {
+                    print("❌ YOLOv3Int8LUT model not found")
                     return
                 }
                 
-                print("📦 Loading base YOLO: \(modelURL.lastPathComponent)")
+                print("📦 Loading YOLOv3: \(modelURL.lastPathComponent)")
                 let compiledURL = try await MLModel.compileModel(at: modelURL)
                 let mlModel = try MLModel(contentsOf: compiledURL)
                 model = try VNCoreMLModel(for: mlModel)
-                print("✅ Base YOLO loaded - 80 COCO classes")
+                print("✅ YOLOv3Int8LUT loaded - 80 COCO classes")
                 
             } catch {
                 print("❌ Failed to load YOLO: \(error)")

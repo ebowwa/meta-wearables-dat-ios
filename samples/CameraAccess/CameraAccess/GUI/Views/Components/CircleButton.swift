@@ -19,13 +19,15 @@ struct CircleButton: View {
   let text: String?
   let backgroundColor: Color
   let foregroundColor: Color
+  let isDisabled: Bool
   let action: () -> Void
 
-  init(icon: String, text: String? = nil, backgroundColor: Color = .white, foregroundColor: Color = .black, action: @escaping () -> Void) {
+  init(icon: String, text: String? = nil, backgroundColor: Color = .white, foregroundColor: Color = .black, isDisabled: Bool = false, action: @escaping () -> Void) {
     self.icon = icon
     self.text = text
     self.backgroundColor = backgroundColor
     self.foregroundColor = foregroundColor
+    self.isDisabled = isDisabled
     self.action = action
   }
 
@@ -43,9 +45,10 @@ struct CircleButton: View {
           .font(.system(size: 16))
       }
     }
-    .foregroundColor(foregroundColor)
+    .disabled(isDisabled)
+    .foregroundColor(isDisabled ? foregroundColor.opacity(0.4) : foregroundColor)
     .frame(width: 56, height: 56)
-    .background(backgroundColor)
+    .background(isDisabled ? backgroundColor.opacity(0.5) : backgroundColor)
     .clipShape(Circle())
   }
 }

@@ -23,7 +23,7 @@ final class InterpreterRegistry {
     /// Get the appropriate interpreter for a model type
     func interpreter(for modelType: YOLOModelType) -> any DetectionInterpreter {
         switch modelType {
-        case .generic, .faceClassification, .custom:
+        case .generic, .faceClassification, .custom, .segmentation:
             return passthrough
         }
     }

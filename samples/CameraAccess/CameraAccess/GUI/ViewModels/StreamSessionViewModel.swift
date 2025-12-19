@@ -254,9 +254,15 @@ class StreamSessionViewModel: ObservableObject {
   @Published var activeTimeLimit: StreamTimeLimit = .noLimit
   @Published var remainingTime: TimeInterval = 0
 
-  // Photo capture properties
+  // Photo capture properties (legacy - for share sheet)
   @Published var capturedPhoto: UIImage?
   @Published var showPhotoPreview: Bool = false
+  
+  // Photo training properties (new training workflow)
+  // When camera button is pressed, photo goes here for training UI
+  @Published var photoForTraining: UIImage?
+  @Published var photoDetections: [YOLODetection] = []
+  @Published var showPhotoTraining: Bool = false
 
   // YOLO Detection properties
   @Published var showModelPicker: Bool = false
@@ -264,9 +270,20 @@ class StreamSessionViewModel: ObservableObject {
   let detectionService = YOLODetectionService()
   @Published var currentDetections: [YOLODetection] = []
   
+  // Segmentation properties (MobileViT + DeepLabV3)
+  let segmentationService = SegmentationService()
+  @Published var currentSegmentation: SegmentationResult?
+  
+  var isSegmentationEnabled: Bool {
+    get { segmentationService.isEnabled }
+    set { segmentationService.isEnabled = newValue }
+  }
+  
   // KNN Training properties
   let trainingService = TrainingService()
+  lazy var detectionBridge: DetectionTrainingBridge = DetectionTrainingBridge(trainingService: trainingService)
   @Published var showTrainingOverlay: Bool = true
+  @Published var detectionPredictions: [UUID: KNNResult] = [:]  // Per-detection KNN predictions
   
   var isDetectionEnabled: Bool {
     get { detectionService.isEnabled }
@@ -414,9 +431,15 @@ class StreamSessionViewModel: ObservableObject {
             self.currentDetections = detections
           }
           
-          // Run KNN prediction in inference mode (throttled)
-          if self.showTrainingOverlay && self.trainingService.mode == .inference {
-            await self.runPrediction()
+          // Run segmentation if enabled and model loaded
+          if self.segmentationService.isEnabled && self.segmentationService.hasModel {
+            self.currentSegmentation = await self.segmentationService.segment(image: image)
+          }
+          
+          // Run per-detection KNN prediction whenever we have training data
+          // This runs regardless of mode so labels appear immediately after training
+          if self.showTrainingOverlay && self.detectionBridge.hasTrainingData {
+            await self.runDetectionPredictions(for: self.currentDetections, in: image)
           }
         }
       }
@@ -436,14 +459,109 @@ class StreamSessionViewModel: ObservableObject {
 
     updateStatusFromState(streamSession.state)
 
-    // Subscribe to photo capture events
+    // ================================================================================
+    // DAT SDK PHOTO CAPTURE - PUBLISHER/LISTENER PATTERN
+    // ================================================================================
+    //
+    // HOW THE SDK PHOTO CAPTURE FLOW WORKS:
+    // =====================================
+    //
+    // 1. TRIGGER: User taps camera button → calls streamSession.capturePhoto(format:)
+    //    - This is a synchronous call that returns Bool immediately
+    //    - Returns `true` if capture request was accepted by SDK
+    //    - Returns `false` if streaming isn't active or device unavailable
+    //    - The actual photo capture happens ASYNCHRONOUSLY on the glasses
+    //
+    // 2. CAPTURE: Meta glasses receive the command over Bluetooth
+    //    - Glasses capture a high-resolution still image (separate from video stream)
+    //    - Image is encoded in requested format (JPEG or HEIC)
+    //    - Compressed data is transmitted back to the iOS device
+    //
+    // 3. DELIVERY: SDK emits PhotoData through photoDataPublisher
+    //    - PhotoData struct contains: data (Foundation.Data) + format (PhotoCaptureFormat)
+    //    - This is an async event - timing depends on BLE latency + compression
+    //    - Typical latency: 200-500ms from button press to photo received
+    //
+    // 4. HANDLING: Our listener converts Data → UIImage and displays preview
+    //    - PhotoData.data can be directly written to disk as .jpg/.heic file
+    //    - Or converted to UIImage for display/processing
+    //
+    // AVAILABLE PHOTO FORMATS:
+    // ========================
+    // - .jpeg: Universal compatibility, smaller file size, slight quality loss
+    // - .heic: Better compression, higher quality, iOS 11+ only
+    //
+    // KEY SDK DESIGN PATTERN:
+    // =======================
+    // The DAT SDK uses an async Publisher/Listener pattern throughout:
+    // - capturePhoto(format:) → Bool    (synchronous trigger, returns success/failure)
+    // - photoDataPublisher.listen {}    (async delivery when photo is ready)
+    //
+    // This decoupling is necessary because:
+    // - Bluetooth communication is inherently asynchronous
+    // - Multiple photo captures can be queued
+    // - Network latency varies significantly
+    // - Error handling can occur at any point in the pipeline
+    //
+    // ================================================================================
+    // FUTURE: PHOTO CAPTURE → KNN TRAINING INTEGRATION
+    // ================================================================================
+    //
+    // The captured photo can be used to train the on-device KNN classifier:
+    //
+    // OPTION A: YOLO DETECTION ONLY (User provides label manually)
+    // ============================================================
+    // 1. User taps camera button to capture high-res photo
+    // 2. Photo preview appears with YOLO detection overlay
+    // 3. YOLO identifies object bounding boxes (person, chair, etc.)
+    // 4. User taps a detected object → prompted for custom label ("Alice", "My Dog")
+    // 5. Cropped region (from bounding box) is fed to KNN for training
+    //
+    // Pros: User provides accurate labels, YOLO just helps with cropping
+    // Cons: Requires user input for every training sample
+    //
+    // OPTION B: YOLO DETECTION + LABELING (YOLO provides initial label)
+    // =================================================================
+    // 1. User taps camera button to capture high-res photo
+    // 2. YOLO detects objects AND provides class labels ("person", "dog")
+    // 3. User can accept YOLO label or override with custom label
+    // 4. KNN learns to map embeddings → labels (YOLO or custom)
+    //
+    // Pros: Faster training with YOLO-suggested labels
+    // Cons: YOLO's 80 COCO classes may not match user's needs
+    //
+    // CURRENT STATUS: Using Option A approach (YOLO detection, user labeling)
+    // The TrainingOverlay already supports tap-to-label on YOLO detections
+    // Photo capture could enhance this with higher-resolution training samples
+    //
+    // ================================================================================
+    //
+    // Subscribe to photo capture events from DAT SDK
     // PhotoData contains the captured image in the requested format (JPEG/HEIC)
+    //
+    // NEW TRAINING WORKFLOW:
+    // 1. Photo arrives from glasses via SDK
+    // 2. Run YOLO detection on the high-res photo
+    // 3. Show PhotoTrainingView with detections overlaid
+    // 4. User taps detection → labels it → KNN trains on cropped region
+    //
     photoDataListenerToken = streamSession.photoDataPublisher.listen { [weak self] photoData in
       Task { @MainActor [weak self] in
         guard let self else { return }
         if let uiImage = UIImage(data: photoData.data) {
+          // Store for legacy share sheet (still accessible via showPhotoPreview)
           self.capturedPhoto = uiImage
-          self.showPhotoPreview = true
+          
+          // Run YOLO detection on the high-res photo
+          // This gives us object bounding boxes for the training UI
+          let detections = await self.detectionService.detect(in: uiImage)
+          
+          // Set up training view with photo + detections
+          self.photoForTraining = uiImage
+          self.photoDetections = detections
+          self.showPhotoTraining = true
+          
+          print("📸 Photo captured: \(Int(uiImage.size.width))x\(Int(uiImage.size.height)), \(detections.count) detections")
         }
       }
     }
@@ -525,13 +643,85 @@ class StreamSessionViewModel: ObservableObject {
     }
   }
 
+  // ================================================================================
+  // DAT SDK: capturePhoto() - High-Resolution Image Capture
+  // ================================================================================
+  //
+  // This triggers the Meta glasses to capture a HIGH-RESOLUTION still image,
+  // separate from the continuous low-resolution video stream.
+  //
+  // KEY DIFFERENCES: capturePhoto() vs currentVideoFrame
+  // =====================================================
+  //
+  // | Aspect           | capturePhoto()           | currentVideoFrame         |
+  // |------------------|--------------------------|---------------------------|
+  // | Resolution       | HIGH (native sensor)     | LOW/MED/HIGH (configured) |
+  // | Frequency        | On-demand (user trigger) | Continuous (24fps)        |
+  // | Latency          | 200-500ms async          | Real-time (~40ms)         |
+  // | Quality          | JPEG/HEIC compressed     | Raw UIImage from stream   |
+  // | Training Use     | Best for KNN samples     | Good for live inference   |
+  //
+  // SDK FUNCTION SIGNATURE:
+  // =======================
+  // @discardableResult
+  // @MainActor final public func capturePhoto(format: PhotoCaptureFormat) -> Bool
+  //
+  // - Returns `true`: Capture request accepted, photo will arrive via photoDataPublisher
+  // - Returns `false`: Capture failed (not streaming, device disconnected, etc.)
+  //
+  // The @discardableResult annotation means Swift won't warn if you ignore the Bool,
+  // but we SHOULD check it to provide user feedback on failure.
+  //
+  // TRAINING INTEGRATION (FUTURE):
+  // ==============================
+  // For KNN training, high-res photos from capturePhoto() may produce better embeddings
+  // than low-res video frames, especially for:
+  // - Fine-grained recognition (faces, text, small objects)
+  // - Training samples that need to generalize to different distances
+  // - When user wants to capture a "canonical" view of an object
+  //
+  // Flow: capturePhoto() → photoDataPublisher → show preview → user labels → KNN.addSample()
+  //
+  // ================================================================================
   func capturePhoto() {
-    streamSession.capturePhoto(format: .jpeg)
+    // Photo capture only works during active streaming
+    // The SDK internally checks this but we provide a clearer error message
+    guard streamingStatus == .streaming else {
+      showError("Cannot capture photo: streaming is not active")
+      return
+    }
+    
+    // Request photo capture from Meta glasses via DAT SDK
+    // Format options: .jpeg (universal) or .heic (better compression, iOS 11+)
+    // The actual photo arrives asynchronously via photoDataPublisher listener
+    let success = streamSession.capturePhoto(format: .jpeg)
+    if !success {
+      // SDK rejected the capture request - typically means:
+      // - Stream session not in .streaming state
+      // - Device disconnected during the request
+      // - Internal SDK error
+      showError("Photo capture failed. Please try again.")
+    }
+    // If success == true, wait for photoDataPublisher to deliver the PhotoData
+    // See the listener setup in init() for handling the async response
   }
 
   func dismissPhotoPreview() {
     showPhotoPreview = false
     capturedPhoto = nil
+  }
+  
+  /// Dismiss the photo training view and clean up state
+  func dismissPhotoTraining() {
+    showPhotoTraining = false
+    photoForTraining = nil
+    photoDetections = []
+  }
+  
+  /// Save captured photo to the user's photo library
+  func savePhotoToLibrary() {
+    guard let photo = photoForTraining ?? capturedPhoto else { return }
+    UIImageWriteToSavedPhotosAlbum(photo, nil, nil, nil)
   }
 
   private func startTimer() {
@@ -588,12 +778,12 @@ class StreamSessionViewModel: ObservableObject {
   
   // MARK: - YOLO Detection
   
-  /// Load the bundled yolo11n generic model
+  /// Load the bundled YOLOv3Int8LUT generic model
   func loadDefaultYOLOModel() async {
     await modelManager.discoverModels()
     
-    // Prefer bundled yolo11n for generic object detection
-    let preferredModels = ["yolo11n", "YOLOv3Int8LUT"]
+    // Use bundled YOLOv3Int8LUT for generic object detection (80 COCO classes)
+    let preferredModels = ["YOLOv3Int8LUT"]
     
     for modelName in preferredModels {
       if let model = modelManager.availableModels.first(where: { 
@@ -646,23 +836,48 @@ class StreamSessionViewModel: ObservableObject {
   // MARK: - KNN Training
   
   /// Capture current frame with label for KNN training
-  func captureWithLabel(_ label: String) {
+  /// - Parameters:
+  ///   - label: The label for this training sample
+  ///   - boundingBox: Optional normalized bounding box (0-1, Vision-style). If nil, trains on full frame.
+  func captureWithLabel(_ label: String, boundingBox: CGRect? = nil) {
     guard let image = currentVideoFrame else {
       print("❌ No video frame to capture")
       return
     }
     
     Task {
-      let success = await trainingService.addTrainingSample(image: image, label: label)
+      let success: Bool
+      if let bbox = boundingBox {
+        // Train on cropped detection region
+        success = await trainingService.addTrainingSample(image: image, boundingBox: bbox, label: label)
+      } else {
+        // Train on full frame (fallback)
+        success = await trainingService.addTrainingSample(image: image, label: label)
+      }
+      
       if success {
-        print("✅ Captured training sample: \(label)")
+        print("✅ Captured training sample: \(label)" + (boundingBox != nil ? " (cropped)" : " (full frame)"))
       }
     }
   }
   
-  /// Run KNN prediction on current frame
+  /// Run KNN prediction on current frame (legacy full-frame mode)
   func runPrediction() async {
     guard let image = currentVideoFrame else { return }
     _ = await trainingService.predict(image: image)
+  }
+  
+  /// Run KNN prediction for each YOLO detection (maps 'person' → 'Alice', etc)
+  func runDetectionPredictions(for detections: [YOLODetection], in image: UIImage) async {
+    var predictions: [UUID: KNNResult] = [:]
+    
+    // Limit to first 5 detections for performance
+    for detection in detections.prefix(5) {
+      if let prediction = await detectionBridge.predictForDetection(detection, in: image) {
+        predictions[detection.id] = prediction.knnResult
+      }
+    }
+    
+    self.detectionPredictions = predictions
   }
 }

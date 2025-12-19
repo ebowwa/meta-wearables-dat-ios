@@ -1,0 +1,14 @@
+[project]
+name = "resnet18-coreml-converter"
+version = "1.0.0"
+description = "Convert ResNet18 to CoreML for iOS embedding extraction"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "coremltools>=7.0",
+    "pillow>=10.0.0",
+]
+
+[tool.uv]
+dev-dependencies = []

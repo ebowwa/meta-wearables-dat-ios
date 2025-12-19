@@ -26,15 +26,23 @@ struct TrainingOverlay: View {
     // From parent - YOLO detections from glasses stream
     var detections: [YOLODetection] = []
     var currentFrame: UIImage? = nil
+    var viewSize: CGSize = .zero  // For normalizing manual boxes
+    var detectionPredictions: [UUID: KNNResult] = [:]  // Per-detection KNN labels (e.g., person → "Alice")
     
-    let onCapture: (String) -> Void
+    /// Callback when user confirms training
+    /// - Parameters:
+    ///   - label: The user-provided label
+    ///   - boundingBox: Normalized bounding box (0-1, Vision-style) or nil for full frame
+    let onCapture: (String, CGRect?) -> Void
     
     var body: some View {
         GeometryReader { geometry in
             ZStack {
                 // Drag gesture layer for drawing bounding box
+                // Only intercepts touches when there are no YOLO detections to tap
                 Color.clear
                     .contentShape(Rectangle())
+                    .allowsHitTesting(detections.isEmpty)  // Let taps through to detection boxes
                     .gesture(
                         DragGesture(minimumDistance: 20)
                             .onChanged { value in
@@ -105,6 +113,7 @@ struct TrainingOverlay: View {
                         detection: detection,
                         frame: detection.boundingBox(in: geometry.size),
                         isSelected: selectedDetection?.id == detection.id,
+                        knnPrediction: detectionPredictions[detection.id],
                         onTap: { 
                             drawnBox = nil  // Clear manual box
                             selectDetection(detection) 
@@ -185,19 +194,35 @@ struct TrainingOverlay: View {
     }
     
     private func confirmTraining() {
-        guard !labelForDetection.isEmpty else { return }
-        onCapture(labelForDetection)
+        guard !labelForDetection.isEmpty, let detection = selectedDetection else { return }
+        // Pass the normalized bounding box from the YOLO detection
+        onCapture(labelForDetection, detection.boundingBox)
         selectedDetection = nil
         labelForDetection = ""
         UINotificationFeedbackGenerator().notificationOccurred(.success)
     }
     
     private func confirmManualBox() {
-        guard !manualLabel.isEmpty else { return }
-        onCapture(manualLabel)
+        guard !manualLabel.isEmpty, let box = drawnBox else { return }
+        // Normalize the manually-drawn box to 0-1 coordinates (Vision-style)
+        let normalizedBox = normalizeBox(box)
+        onCapture(manualLabel, normalizedBox)
         drawnBox = nil
         manualLabel = ""
         UINotificationFeedbackGenerator().notificationOccurred(.success)
+    }
+    
+    /// Convert screen coordinates to normalized Vision coordinates (0-1, bottom-left origin)
+    private func normalizeBox(_ box: CGRect) -> CGRect {
+        guard viewSize.width > 0 && viewSize.height > 0 else { return .zero }
+        
+        let x = box.origin.x / viewSize.width
+        let width = box.width / viewSize.width
+        let height = box.height / viewSize.height
+        // Vision uses bottom-left origin, so flip Y
+        let y = 1 - (box.origin.y / viewSize.height) - height
+        
+        return CGRect(x: x, y: y, width: width, height: height)
     }
 }
 
@@ -279,26 +304,46 @@ struct TappableDetectionBox: View {
     let detection: YOLODetection
     let frame: CGRect
     let isSelected: Bool
+    let knnPrediction: KNNResult?  // Custom learned label for this detection
     let onTap: () -> Void
     
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 4)
-                .stroke(isSelected ? Color.yellow : Color.green, lineWidth: isSelected ? 3 : 2)
+                .stroke(isSelected ? Color.yellow : boxColor, lineWidth: isSelected ? 3 : 2)
                 .background(
                     RoundedRectangle(cornerRadius: 4)
                         .fill(isSelected ? Color.yellow.opacity(0.2) : Color.clear)
                 )
                 .frame(width: frame.width, height: frame.height)
             
-            VStack {
+            VStack(spacing: 2) {
+                // YOLO class label (e.g., "laptop", "person")
+                // Always shown at top as the category/class
                 Text(detection.label)
                     .font(.caption2.bold())
                     .foregroundColor(.white)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(isSelected ? Color.yellow : Color.green)
+                    .background(isSelected ? Color.yellow : Color.blue.opacity(0.8))
                     .cornerRadius(4)
+                
+                // Custom KNN label as sub-label (e.g., "→ My MacBook")
+                // Shows the user's trained specific instance name
+                if let knn = knnPrediction, knn.isKnown {
+                    HStack(spacing: 2) {
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 8))
+                        Text(knn.label)
+                            .font(.caption.bold())
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color.green)
+                    .cornerRadius(4)
+                }
+                
                 Spacer()
             }
             .frame(width: frame.width, height: frame.height, alignment: .top)
@@ -306,6 +351,13 @@ struct TappableDetectionBox: View {
         }
         .position(x: frame.midX, y: frame.midY)
         .onTapGesture { onTap() }
+    }
+    
+    private var boxColor: Color {
+        if let knn = knnPrediction, knn.isKnown {
+            return .green  // Known/trained detection
+        }
+        return .blue  // Unknown detection
     }
 }
 
@@ -407,6 +459,6 @@ struct TrainingStatsView: View {
 }
 
 #Preview {
-    TrainingOverlay(trainingService: TrainingService()) { _ in }
+    TrainingOverlay(trainingService: TrainingService()) { _, _ in }
         .background(Color.gray)
 }
