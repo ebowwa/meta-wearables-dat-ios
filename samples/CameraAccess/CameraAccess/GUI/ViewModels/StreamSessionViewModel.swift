@@ -398,9 +398,17 @@ class StreamSessionViewModel: ObservableObject {
           self.currentVideoFrame = image
           if !self.hasReceivedFirstFrame {
             self.hasReceivedFirstFrame = true
+            
+            // Auto-load YOLO and enable detection on first frame
+            Task {
+              await self.loadDefaultYOLOModel()
+              self.detectionService.isEnabled = true
+              self.showTrainingOverlay = true
+              print("✅ YOLO detection auto-enabled")
+            }
           }
           
-          // Run YOLO detection if enabled
+          // Run YOLO detection if enabled and model loaded
           if self.detectionService.isEnabled && self.detectionService.hasModel {
             let detections = await self.detectionService.detect(in: image)
             self.currentDetections = detections
