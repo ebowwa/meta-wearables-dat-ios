@@ -580,15 +580,36 @@ class StreamSessionViewModel: ObservableObject {
   
   // MARK: - YOLO Detection
   
-  /// Load the bundled YOLOv3 model
+  /// Load the bundled yolo11n generic model
   func loadDefaultYOLOModel() async {
-    // Look for bundled YOLOv3 model
     await modelManager.discoverModels()
-    if let yoloModel = modelManager.availableModels.first(where: { $0.name.contains("YOLO") || $0.name.contains("yolo") }) {
+    
+    // Prefer bundled yolo11n for generic object detection
+    let preferredModels = ["yolo11n", "YOLOv3Int8LUT"]
+    
+    for modelName in preferredModels {
+      if let model = modelManager.availableModels.first(where: { 
+        $0.name.lowercased().contains(modelName.lowercased()) && $0.isDownloaded 
+      }) {
+        do {
+          try await modelManager.loadModel(model)
+          if let visionModel = modelManager.loadedVisionModel {
+            detectionService.setModel(visionModel, modelType: model.modelType)
+            print("✅ Loaded model: \(model.name)")
+            return
+          }
+        } catch {
+          print("⚠️ Failed to load \(modelName): \(error.localizedDescription)")
+        }
+      }
+    }
+    
+    // Fallback: any downloaded bundled model
+    if let model = modelManager.availableModels.first(where: { $0.isDownloaded }) {
       do {
-        try await modelManager.loadModel(yoloModel)
+        try await modelManager.loadModel(model)
         if let visionModel = modelManager.loadedVisionModel {
-          detectionService.setModel(visionModel, modelType: yoloModel.modelType)
+          detectionService.setModel(visionModel, modelType: model.modelType)
         }
       } catch {
         showError("Failed to load YOLO model: \(error.localizedDescription)")

@@ -2,8 +2,8 @@
 //  TrainingOverlay.swift
 //  CameraAccess
 //
-//  Object learning overlay - uses YOLO detections from glasses stream
-//  User taps on detected objects to train them
+//  Training UI that overlays DIRECTLY on glasses live stream
+//  NO separate views - everything happens on top of the camera feed
 //
 
 import SwiftUI
@@ -11,12 +11,14 @@ import SwiftUI
 struct TrainingOverlay: View {
     @ObservedObject var trainingService: TrainingService
     
-    @State private var showingLearningSession = false
     @State private var showingLibrary = false
     @State private var selectedDetection: YOLODetection? = nil
     @State private var labelForDetection: String = ""
+    @State private var isInManualMode = false
+    @State private var manualLabel: String = ""
+    @State private var manualCaptureCount: Int = 0
     
-    // From parent - YOLO detections and current frame
+    // From parent - YOLO detections from glasses stream
     var detections: [YOLODetection] = []
     var currentFrame: UIImage? = nil
     
@@ -25,7 +27,7 @@ struct TrainingOverlay: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Tappable detection boxes - user selects what to train
+                // Tappable YOLO detection boxes on glasses stream
                 ForEach(detections) { detection in
                     TappableDetectionBox(
                         detection: detection,
@@ -35,7 +37,7 @@ struct TrainingOverlay: View {
                     )
                 }
                 
-                // Live prediction display (when we have trained objects)
+                // Live prediction (when trained objects exist)
                 if !trainingService.trainedClasses.isEmpty,
                    let prediction = trainingService.lastPrediction,
                    prediction.isKnown {
@@ -46,66 +48,38 @@ struct TrainingOverlay: View {
                     }
                 }
                 
-                // Bottom controls
+                // Bottom UI
                 VStack {
                     Spacer()
                     
-                    // Selection prompt
-                    if selectedDetection != nil {
+                    if isInManualMode {
+                        // Manual capture mode (no YOLO needed)
+                        ManualCaptureBar(
+                            label: $manualLabel,
+                            captureCount: manualCaptureCount,
+                            onCapture: manualCapture,
+                            onDone: exitManualMode
+                        )
+                    } else if let detection = selectedDetection {
+                        // Detection selected - name it
                         LabelInputBar(
-                            detection: selectedDetection!,
+                            detection: detection,
                             label: $labelForDetection,
                             onConfirm: confirmTraining,
                             onCancel: { selectedDetection = nil; labelForDetection = "" }
                         )
                     } else {
                         // Main action bar
-                        HStack(spacing: 20) {
-                            // Inventory button
-                            ObjectLibraryButton(
-                                objectCount: trainingService.trainedClasses.count,
-                                action: { showingLibrary = true }
-                            )
-                            
-                            Spacer()
-                            
-                            // Instructions or teach button
-                            if detections.isEmpty {
-                                // No detections - show teach button for manual mode
-                                Button(action: { showingLearningSession = true }) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "plus.circle.fill")
-                                        Text("Teach")
-                                    }
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 12)
-                                    .background(Color.blue)
-                                    .cornerRadius(25)
-                                }
-                            } else {
-                                // Has detections - prompt to tap
-                                Text("Tap an object to teach me")
-                                    .font(.subheadline)
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 10)
-                                    .background(.ultraThinMaterial)
-                                    .cornerRadius(20)
-                            }
-                        }
-                        .padding(.horizontal, 20)
+                        ActionBar(
+                            objectCount: trainingService.trainedClasses.count,
+                            hasDetections: !detections.isEmpty,
+                            onInventory: { showingLibrary = true },
+                            onManualMode: { isInManualMode = true }
+                        )
                     }
                 }
                 .padding(.bottom, 100)
             }
-        }
-        .fullScreenCover(isPresented: $showingLearningSession) {
-            LearningSessionOverlay(
-                trainingService: trainingService,
-                onCapture: onCapture
-            )
         }
         .sheet(isPresented: $showingLibrary) {
             ObjectLibraryView(trainingService: trainingService)
@@ -114,31 +88,142 @@ struct TrainingOverlay: View {
     
     private func selectDetection(_ detection: YOLODetection) {
         selectedDetection = detection
-        // Pre-fill with YOLO label if we don't already know it
-        if !trainingService.trainedClasses.contains(detection.label) {
-            labelForDetection = detection.label
-        } else {
-            labelForDetection = ""
-        }
-        
-        // Haptic feedback
-        let impact = UIImpactFeedbackGenerator(style: .light)
-        impact.impactOccurred()
+        labelForDetection = detection.label
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
     
     private func confirmTraining() {
         guard !labelForDetection.isEmpty else { return }
-        
-        // Use the label that user entered/confirmed
         onCapture(labelForDetection)
-        
-        // Reset
         selectedDetection = nil
         labelForDetection = ""
-        
-        // Success haptic
-        let notification = UINotificationFeedbackGenerator()
-        notification.notificationOccurred(.success)
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+    }
+    
+    private func manualCapture() {
+        guard !manualLabel.isEmpty else { return }
+        onCapture(manualLabel)
+        manualCaptureCount += 1
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+    }
+    
+    private func exitManualMode() {
+        isInManualMode = false
+        manualLabel = ""
+        manualCaptureCount = 0
+    }
+}
+
+// MARK: - Action Bar
+
+struct ActionBar: View {
+    let objectCount: Int
+    let hasDetections: Bool
+    let onInventory: () -> Void
+    let onManualMode: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 20) {
+            // Inventory
+            ObjectLibraryButton(objectCount: objectCount, action: onInventory)
+            
+            Spacer()
+            
+            if hasDetections {
+                Text("Tap object to teach")
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(20)
+            } else {
+                // Manual mode button
+                Button(action: onManualMode) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "plus.circle.fill")
+                        Text("Teach")
+                    }
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(Color.blue)
+                    .cornerRadius(25)
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+    }
+}
+
+// MARK: - Manual Capture Bar
+
+struct ManualCaptureBar: View {
+    @Binding var label: String
+    let captureCount: Int
+    let onCapture: () -> Void
+    let onDone: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            // Header
+            HStack {
+                Text("Point at object, then capture")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                Spacer()
+                if captureCount >= 3 {
+                    Button("Done ✓", action: onDone)
+                        .font(.headline)
+                        .foregroundColor(.green)
+                }
+            }
+            
+            // Input + capture
+            HStack(spacing: 12) {
+                TextField("Object name...", text: $label)
+                    .textFieldStyle(.plain)
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(Color.white.opacity(0.1))
+                    .cornerRadius(10)
+                
+                // Capture button
+                Button(action: onCapture) {
+                    ZStack {
+                        Circle()
+                            .stroke(Color.white, lineWidth: 3)
+                            .frame(width: 60, height: 60)
+                        Circle()
+                            .fill(label.isEmpty ? Color.gray : Color.blue)
+                            .frame(width: 50, height: 50)
+                        
+                        if captureCount > 0 {
+                            Text("\(captureCount)")
+                                .font(.caption.bold())
+                                .foregroundColor(.white)
+                        } else {
+                            Image(systemName: "plus")
+                                .foregroundColor(.white)
+                        }
+                    }
+                }
+                .disabled(label.isEmpty)
+            }
+            
+            // Progress hint
+            if captureCount > 0 && captureCount < 5 {
+                Text("\(captureCount)/5 samples (need at least 3)")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
+        }
+        .padding()
+        .background(.ultraThinMaterial)
+        .cornerRadius(16)
+        .padding(.horizontal)
     }
 }
 
@@ -152,7 +237,6 @@ struct TappableDetectionBox: View {
     
     var body: some View {
         ZStack {
-            // Bounding box
             RoundedRectangle(cornerRadius: 4)
                 .stroke(isSelected ? Color.yellow : Color.green, lineWidth: isSelected ? 3 : 2)
                 .background(
@@ -161,7 +245,6 @@ struct TappableDetectionBox: View {
                 )
                 .frame(width: frame.width, height: frame.height)
             
-            // Label
             VStack {
                 Text(detection.label)
                     .font(.caption2.bold())
@@ -190,9 +273,8 @@ struct LabelInputBar: View {
     
     var body: some View {
         VStack(spacing: 12) {
-            // Header
             HStack {
-                Text("Name this object:")
+                Text("Name this \(detection.label):")
                     .font(.subheadline)
                     .foregroundColor(.gray)
                 Spacer()
@@ -202,9 +284,8 @@ struct LabelInputBar: View {
                 }
             }
             
-            // Input row
             HStack(spacing: 12) {
-                TextField("e.g., Coffee Mug", text: $label)
+                TextField("e.g., My Coffee Mug", text: $label)
                     .textFieldStyle(.plain)
                     .font(.headline)
                     .foregroundColor(.white)
@@ -219,10 +300,6 @@ struct LabelInputBar: View {
                 }
                 .disabled(label.isEmpty)
             }
-            
-            Text("YOLO detected: \(detection.label)")
-                .font(.caption)
-                .foregroundColor(.gray)
         }
         .padding()
         .background(.ultraThinMaterial)
@@ -239,7 +316,7 @@ struct PredictionBanner: View {
     var body: some View {
         HStack(spacing: 12) {
             Circle()
-                .fill(prediction.isKnown ? Color.green : Color.orange)
+                .fill(Color.green)
                 .frame(width: 12, height: 12)
             
             Text(prediction.label)
@@ -248,77 +325,12 @@ struct PredictionBanner: View {
             
             Text("\(Int(prediction.confidence * 100))%")
                 .font(.subheadline)
-                .foregroundColor(prediction.isKnown ? .green : .orange)
+                .foregroundColor(.green)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
         .background(.ultraThinMaterial)
         .cornerRadius(25)
-    }
-}
-
-// MARK: - Learning Session (fallback for no detections)
-
-struct LearningSessionOverlay: View {
-    @ObservedObject var trainingService: TrainingService
-    @Environment(\.dismiss) var dismiss
-    
-    @State private var currentStep: LearningStep = .nameObject
-    @State private var objectName: String = ""
-    @State private var capturedCount: Int = 0
-    @State private var isCapturing: Bool = false
-    
-    let requiredSamples = 5
-    let onCapture: (String) -> Void
-    
-    var body: some View {
-        ZStack {
-            Color.black.opacity(0.9).ignoresSafeArea()
-            
-            VStack(spacing: 0) {
-                // Header
-                HStack {
-                    Button(action: { dismiss() }) {
-                        Image(systemName: "xmark")
-                            .font(.title2)
-                            .foregroundColor(.white.opacity(0.7))
-                            .padding()
-                    }
-                    Spacer()
-                    Text("Teach Me")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                    Spacer()
-                    Color.clear.frame(width: 44, height: 44)
-                }
-                
-                // Steps
-                HStack(spacing: 4) {
-                    StepDot(step: 1, label: "Name", isActive: currentStep == .nameObject, isCompleted: currentStep != .nameObject)
-                    StepLine(isCompleted: currentStep != .nameObject)
-                    StepDot(step: 2, label: "Show", isActive: currentStep == .captureExamples, isCompleted: currentStep == .testRecognition)
-                    StepLine(isCompleted: currentStep == .testRecognition)
-                    StepDot(step: 3, label: "Test", isActive: currentStep == .testRecognition, isCompleted: false)
-                }
-                .padding(.horizontal, 32)
-                .padding(.bottom, 16)
-                
-                // Content
-                switch currentStep {
-                case .nameObject:
-                    NameObjectStep(objectName: $objectName, onContinue: { currentStep = .captureExamples })
-                case .captureExamples:
-                    CaptureStep(objectName: objectName, capturedCount: capturedCount, requiredSamples: requiredSamples, isCapturing: isCapturing, onCapture: {
-                        onCapture(objectName)
-                        capturedCount += 1
-                        let impact = UIImpactFeedbackGenerator(style: .medium)
-                        impact.impactOccurred()
-                    }, onFinish: { currentStep = .testRecognition })
-                case .testRecognition:
-                    TestStep(objectName: objectName, trainingService: trainingService, onDone: { dismiss() }, onRetrain: { capturedCount = 0; currentStep = .captureExamples })
-                }
-            }
-        }
     }
 }
 
