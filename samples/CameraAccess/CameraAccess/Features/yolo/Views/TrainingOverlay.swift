@@ -2,8 +2,9 @@
 //  TrainingOverlay.swift
 //  CameraAccess
 //
-//  Training UI that overlays DIRECTLY on glasses live stream
-//  NO separate views - everything happens on top of the camera feed
+//  Training UI that overlays on glasses live stream
+//  - Tap YOLO detections to train them
+//  - Draw bounding box manually when YOLO doesn't detect
 //
 
 import SwiftUI
@@ -14,9 +15,13 @@ struct TrainingOverlay: View {
     @State private var showingLibrary = false
     @State private var selectedDetection: YOLODetection? = nil
     @State private var labelForDetection: String = ""
-    @State private var isInManualMode = false
+    
+    // Manual bounding box drawing
+    @State private var isDrawingBox = false
+    @State private var boxStart: CGPoint = .zero
+    @State private var boxEnd: CGPoint = .zero
+    @State private var drawnBox: CGRect? = nil
     @State private var manualLabel: String = ""
-    @State private var manualCaptureCount: Int = 0
     
     // From parent - YOLO detections from glasses stream
     var detections: [YOLODetection] = []
@@ -27,17 +32,87 @@ struct TrainingOverlay: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Tappable YOLO detection boxes on glasses stream
+                // Drag gesture layer for drawing bounding box
+                Color.clear
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 20)
+                            .onChanged { value in
+                                if !isDrawingBox {
+                                    isDrawingBox = true
+                                    boxStart = value.startLocation
+                                    selectedDetection = nil
+                                }
+                                boxEnd = value.location
+                            }
+                            .onEnded { value in
+                                let rect = CGRect(
+                                    x: min(boxStart.x, boxEnd.x),
+                                    y: min(boxStart.y, boxEnd.y),
+                                    width: abs(boxEnd.x - boxStart.x),
+                                    height: abs(boxEnd.y - boxStart.y)
+                                )
+                                // Only keep if box is big enough
+                                if rect.width > 50 && rect.height > 50 {
+                                    drawnBox = rect
+                                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                }
+                                isDrawingBox = false
+                            }
+                    )
+                
+                // Drawing box preview
+                if isDrawingBox {
+                    let rect = CGRect(
+                        x: min(boxStart.x, boxEnd.x),
+                        y: min(boxStart.y, boxEnd.y),
+                        width: abs(boxEnd.x - boxStart.x),
+                        height: abs(boxEnd.y - boxStart.y)
+                    )
+                    Rectangle()
+                        .stroke(Color.yellow, lineWidth: 3)
+                        .background(Color.yellow.opacity(0.1))
+                        .frame(width: rect.width, height: rect.height)
+                        .position(x: rect.midX, y: rect.midY)
+                }
+                
+                // Drawn box (after drag ends)
+                if let box = drawnBox {
+                    ZStack {
+                        Rectangle()
+                            .stroke(Color.green, lineWidth: 3)
+                            .background(Color.green.opacity(0.15))
+                            .frame(width: box.width, height: box.height)
+                        
+                        // Corners
+                        ForEach(0..<4) { i in
+                            Circle()
+                                .fill(Color.green)
+                                .frame(width: 12, height: 12)
+                                .position(
+                                    x: i % 2 == 0 ? 0 : box.width,
+                                    y: i < 2 ? 0 : box.height
+                                )
+                        }
+                    }
+                    .frame(width: box.width, height: box.height)
+                    .position(x: box.midX, y: box.midY)
+                }
+                
+                // YOLO detection boxes (tappable)
                 ForEach(detections) { detection in
                     TappableDetectionBox(
                         detection: detection,
                         frame: detection.boundingBox(in: geometry.size),
                         isSelected: selectedDetection?.id == detection.id,
-                        onTap: { selectDetection(detection) }
+                        onTap: { 
+                            drawnBox = nil  // Clear manual box
+                            selectDetection(detection) 
+                        }
                     )
                 }
                 
-                // Live prediction (when trained objects exist)
+                // Live prediction banner
                 if !trainingService.trainedClasses.isEmpty,
                    let prediction = trainingService.lastPrediction,
                    prediction.isKnown {
@@ -52,16 +127,15 @@ struct TrainingOverlay: View {
                 VStack {
                     Spacer()
                     
-                    if isInManualMode {
-                        // Manual capture mode (no YOLO needed)
-                        ManualCaptureBar(
+                    if drawnBox != nil {
+                        // Manual box drawn - get label
+                        ManualBoxInputBar(
                             label: $manualLabel,
-                            captureCount: manualCaptureCount,
-                            onCapture: manualCapture,
-                            onDone: exitManualMode
+                            onConfirm: confirmManualBox,
+                            onCancel: { drawnBox = nil; manualLabel = "" }
                         )
                     } else if let detection = selectedDetection {
-                        // Detection selected - name it
+                        // YOLO detection selected - name it
                         LabelInputBar(
                             detection: detection,
                             label: $labelForDetection,
@@ -69,16 +143,34 @@ struct TrainingOverlay: View {
                             onCancel: { selectedDetection = nil; labelForDetection = "" }
                         )
                     } else {
-                        // Main action bar
+                        // Main action bar with hint
                         ActionBar(
                             objectCount: trainingService.trainedClasses.count,
                             hasDetections: !detections.isEmpty,
-                            onInventory: { showingLibrary = true },
-                            onManualMode: { isInManualMode = true }
+                            onInventory: { showingLibrary = true }
                         )
                     }
                 }
                 .padding(.bottom, 100)
+                
+                // Draw hint (top)
+                if drawnBox == nil && selectedDetection == nil && detections.isEmpty {
+                    VStack {
+                        HStack {
+                            Spacer()
+                            Text("Draw a box around the object")
+                                .font(.caption)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(Color.blue.opacity(0.8))
+                                .cornerRadius(8)
+                            Spacer()
+                        }
+                        .padding(.top, 120)
+                        Spacer()
+                    }
+                }
             }
         }
         .sheet(isPresented: $showingLibrary) {
@@ -100,17 +192,12 @@ struct TrainingOverlay: View {
         UINotificationFeedbackGenerator().notificationOccurred(.success)
     }
     
-    private func manualCapture() {
+    private func confirmManualBox() {
         guard !manualLabel.isEmpty else { return }
         onCapture(manualLabel)
-        manualCaptureCount += 1
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-    }
-    
-    private func exitManualMode() {
-        isInManualMode = false
+        drawnBox = nil
         manualLabel = ""
-        manualCaptureCount = 0
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
     }
 }
 
@@ -120,7 +207,6 @@ struct ActionBar: View {
     let objectCount: Int
     let hasDetections: Bool
     let onInventory: () -> Void
-    let onManualMode: () -> Void
     
     var body: some View {
         HStack(spacing: 20) {
@@ -137,52 +223,34 @@ struct ActionBar: View {
                     .padding(.vertical, 10)
                     .background(.ultraThinMaterial)
                     .cornerRadius(20)
-            } else {
-                // Manual mode button
-                Button(action: onManualMode) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "plus.circle.fill")
-                        Text("Teach")
-                    }
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                    .background(Color.blue)
-                    .cornerRadius(25)
-                }
             }
         }
         .padding(.horizontal, 20)
     }
 }
 
-// MARK: - Manual Capture Bar
+// MARK: - Manual Box Input Bar
 
-struct ManualCaptureBar: View {
+struct ManualBoxInputBar: View {
     @Binding var label: String
-    let captureCount: Int
-    let onCapture: () -> Void
-    let onDone: () -> Void
+    let onConfirm: () -> Void
+    let onCancel: () -> Void
     
     var body: some View {
         VStack(spacing: 12) {
-            // Header
             HStack {
-                Text("Point at object, then capture")
+                Text("Name this object:")
                     .font(.subheadline)
                     .foregroundColor(.gray)
                 Spacer()
-                if captureCount >= 3 {
-                    Button("Done ✓", action: onDone)
-                        .font(.headline)
-                        .foregroundColor(.green)
+                Button(action: onCancel) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.gray)
                 }
             }
             
-            // Input + capture
             HStack(spacing: 12) {
-                TextField("Object name...", text: $label)
+                TextField("e.g., Coffee Cup, Badge...", text: $label)
                     .textFieldStyle(.plain)
                     .font(.headline)
                     .foregroundColor(.white)
@@ -190,34 +258,12 @@ struct ManualCaptureBar: View {
                     .background(Color.white.opacity(0.1))
                     .cornerRadius(10)
                 
-                // Capture button
-                Button(action: onCapture) {
-                    ZStack {
-                        Circle()
-                            .stroke(Color.white, lineWidth: 3)
-                            .frame(width: 60, height: 60)
-                        Circle()
-                            .fill(label.isEmpty ? Color.gray : Color.blue)
-                            .frame(width: 50, height: 50)
-                        
-                        if captureCount > 0 {
-                            Text("\(captureCount)")
-                                .font(.caption.bold())
-                                .foregroundColor(.white)
-                        } else {
-                            Image(systemName: "plus")
-                                .foregroundColor(.white)
-                        }
-                    }
+                Button(action: onConfirm) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 44))
+                        .foregroundColor(label.isEmpty ? .gray : .green)
                 }
                 .disabled(label.isEmpty)
-            }
-            
-            // Progress hint
-            if captureCount > 0 && captureCount < 5 {
-                Text("\(captureCount)/5 samples (need at least 3)")
-                    .font(.caption)
-                    .foregroundColor(.gray)
             }
         }
         .padding()
@@ -263,7 +309,7 @@ struct TappableDetectionBox: View {
     }
 }
 
-// MARK: - Label Input Bar
+// MARK: - Label Input Bar (for YOLO detections)
 
 struct LabelInputBar: View {
     let detection: YOLODetection
