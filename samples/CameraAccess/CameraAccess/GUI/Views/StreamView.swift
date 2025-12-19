@@ -86,15 +86,13 @@ struct StreamView: View {
         }
       }
       
-      // KNN Training overlay - uses glasses stream detections
-      if viewModel.showTrainingOverlay {
-        TrainingOverlay(
-          trainingService: viewModel.trainingService,
-          detections: viewModel.currentDetections,
-          currentFrame: viewModel.currentVideoFrame
-        ) { label in
-          viewModel.captureWithLabel(label)
-        }
+      // Training overlay - always visible during streaming
+      TrainingOverlay(
+        trainingService: viewModel.trainingService,
+        detections: viewModel.currentDetections,
+        currentFrame: viewModel.currentVideoFrame
+      ) { label in
+        viewModel.captureWithLabel(label)
       }
     }
     .onDisappear {
