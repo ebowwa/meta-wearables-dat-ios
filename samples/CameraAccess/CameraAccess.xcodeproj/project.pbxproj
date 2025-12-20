@@ -11,6 +11,7 @@
 		20646EA027B049B55C59CAA6 /* CloudClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47886C1B5B810E18BC407C3A /* CloudClient.swift */; };
 		25F9872328126026E5103B75 /* ServerConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60961F08E18F99D79E78CA00 /* ServerConfig.swift */; };
 		4FA855E6816417E623DCCB95 /* RateLimiter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8595E3A0980D0C54753D4B24 /* RateLimiter.swift */; };
+		6D84727F83D516EFD5DE9EFC /* StreamingSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BA2B0385F87506DEDDF03CF /* StreamingSettings.swift */; };
 		7D9CF0682CA608E29FDA1925 /* CacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 690BC659303708BDFF51911A /* CacheManager.swift */; };
 		8F2D23802E856711002D0588 /* DebugMenuViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F2D237F2E856711002D0588 /* DebugMenuViewModel.swift */; };
 		8F8F00782E8ACB4600A4BDAF /* WearablesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F8F00772E8ACB4500A4BDAF /* WearablesViewModel.swift */; };
@@ -71,6 +72,7 @@
 		144570A61ABA399FB83250A8 /* NetworkProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = NetworkProvider.swift; path = Server/Core/NetworkProvider.swift; sourceTree = "<group>"; };
 		3A3A3A3A3A3A3A3A3A3A3A3A /* CameraAccess.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CameraAccess.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		47886C1B5B810E18BC407C3A /* CloudClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CloudClient.swift; path = Server/Services/CloudClient.swift; sourceTree = "<group>"; };
+		4BA2B0385F87506DEDDF03CF /* StreamingSettings.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = StreamingSettings.swift; path = Server/Core/StreamingSettings.swift; sourceTree = "<group>"; };
 		581C94EDC3F09551FBFC2DC7 /* ASGServer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ASGServer.swift; path = Server/Core/ASGServer.swift; sourceTree = "<group>"; };
 		60961F08E18F99D79E78CA00 /* ServerConfig.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ServerConfig.swift; path = Server/Core/ServerConfig.swift; sourceTree = "<group>"; };
 		690BC659303708BDFF51911A /* CacheManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CacheManager.swift; path = Server/Core/CacheManager.swift; sourceTree = "<group>"; };
@@ -267,6 +269,7 @@
 				144570A61ABA399FB83250A8 /* NetworkProvider.swift */,
 				8595E3A0980D0C54753D4B24 /* RateLimiter.swift */,
 				60961F08E18F99D79E78CA00 /* ServerConfig.swift */,
+				4BA2B0385F87506DEDDF03CF /* StreamingSettings.swift */,
 			);
 			name = Core;
 			sourceTree = "<group>";
@@ -416,6 +419,7 @@
 				EB6DE3166A7FADB9F1EF4ADB /* ASGServerManager.swift in Sources */,
 				919C36B1994327A555DC72D9 /* ASGCameraServer.swift in Sources */,
 				20646EA027B049B55C59CAA6 /* CloudClient.swift in Sources */,
+				6D84727F83D516EFD5DE9EFC /* StreamingSettings.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -444,12 +448,11 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = CameraAccess/CameraAccess.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = V9WTTPBFK9;
+				DEVELOPMENT_TEAM = 42R8ZPM5N8;
 				ENABLE_PREVIEWS = YES;
 				FRAMEWORK_SEARCH_PATHS = "";
 				INFOPLIST_FILE = CameraAccess/Info.plist;
@@ -462,7 +465,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.meta.wearables.external.CameraAccess;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "Facebook Generic";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -475,12 +477,11 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = CameraAccess/CameraAccess.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = V9WTTPBFK9;
+				DEVELOPMENT_TEAM = 42R8ZPM5N8;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = CameraAccess/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -492,7 +493,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.meta.wearables.external.CameraAccess;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "Facebook Generic";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

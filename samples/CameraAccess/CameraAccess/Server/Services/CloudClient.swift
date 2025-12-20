@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 /// Configuration for connecting to the MentraOS Cloud Server
 public struct CloudConfig {
@@ -127,6 +128,53 @@ public final class CloudClient: ObservableObject {
                 print("☁️ Send error: \(error)")
             }
         }
+    }
+    
+    // MARK: - Video Streaming
+    
+    private var lastFrameTime: Date = .distantPast
+    private var frameCount: Int = 0
+    
+    /// Stream a video frame to the cloud (throttled based on settings)
+    public func streamFrame(_ imageData: Data) {
+        guard isConnected else { return }
+        
+        let settings = StreamingSettings.shared
+        guard settings.cloudStreamingEnabled else { return }
+        
+        // Throttle frames based on settings
+        let now = Date()
+        guard now.timeIntervalSince(lastFrameTime) >= settings.frameInterval else { return }
+        lastFrameTime = now
+        frameCount += 1
+        
+        // Create frame message
+        let frameMessage: [String: Any] = [
+            "type": "video_frame",
+            "frame_number": frameCount,
+            "timestamp": now.timeIntervalSince1970,
+            "quality": settings.streamQuality,
+            "size": imageData.count
+        ]
+        
+        // Send metadata first
+        if let metaData = try? JSONSerialization.data(withJSONObject: frameMessage) {
+            send(data: metaData)
+        }
+        
+        // Send frame data
+        send(data: imageData)
+        
+        if frameCount % 30 == 0 {
+            print("☁️ Streamed \(frameCount) frames to cloud")
+        }
+    }
+    
+    /// Stream a UIImage frame (convenience method)
+    public func streamFrame(_ image: UIImage) {
+        let settings = StreamingSettings.shared
+        guard let jpegData = image.jpegData(compressionQuality: settings.compressionQuality) else { return }
+        streamFrame(jpegData)
     }
     
     /// Send a photo to the cloud server

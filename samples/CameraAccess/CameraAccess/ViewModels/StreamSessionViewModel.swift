@@ -97,9 +97,18 @@ class StreamSessionViewModel: ObservableObject {
             self.hasReceivedFirstFrame = true
           }
           
-          // Send frame to ASG Camera Server for external access via HTTP
-          if let jpegData = image.jpegData(compressionQuality: 0.7) {
-            ASGServerManager.shared.updateLatestPhoto(jpegData)
+          let settings = StreamingSettings.shared
+          
+          // Send frame to local ASG Camera Server (if enabled)
+          if settings.localServerEnabled {
+            if let jpegData = image.jpegData(compressionQuality: settings.compressionQuality) {
+              ASGServerManager.shared.updateLatestPhoto(jpegData)
+            }
+          }
+          
+          // Stream frame to MentraOS Cloud (if enabled)
+          if settings.cloudStreamingEnabled {
+            CloudClient.shared.streamFrame(image)
           }
         }
       }
