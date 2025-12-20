@@ -86,12 +86,12 @@ public final class StreamingSettings: ObservableObject {
         let defaults = UserDefaults.standard
         
         // Load saved settings or use defaults
-        self.cloudStreamingEnabled = defaults.object(forKey: Keys.cloudStreamingEnabled) as? Bool ?? false
+        self.cloudStreamingEnabled = defaults.object(forKey: Keys.cloudStreamingEnabled) as? Bool ?? true
         self.localServerEnabled = defaults.object(forKey: Keys.localServerEnabled) as? Bool ?? true
         self.cloudURL = defaults.string(forKey: Keys.cloudURL) ?? "https://olive-results-train.loca.lt"
         self.streamQuality = defaults.object(forKey: Keys.streamQuality) as? Double ?? 0.5
         self.frameRate = defaults.object(forKey: Keys.frameRate) as? Int ?? 10
-        self.autoConnect = defaults.object(forKey: Keys.autoConnect) as? Bool ?? false
+        self.autoConnect = defaults.object(forKey: Keys.autoConnect) as? Bool ?? true
         self.uploadPhotosToCloud = defaults.object(forKey: Keys.uploadPhotosToCloud) as? Bool ?? true
         self.savePhotosLocally = defaults.object(forKey: Keys.savePhotosLocally) as? Bool ?? true
     }
@@ -123,7 +123,7 @@ public final class StreamingSettings: ObservableObject {
         cloudURL = "https://olive-results-train.loca.lt"
         streamQuality = 0.5
         frameRate = 10
-        autoConnect = false
+        autoConnect = true
         uploadPhotosToCloud = true
         savePhotosLocally = true
     }
