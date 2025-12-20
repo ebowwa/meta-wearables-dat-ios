@@ -14,6 +14,7 @@ public final class StreamingSettings: ObservableObject {
         static let cloudStreamingEnabled = "cloudStreamingEnabled"
         static let localServerEnabled = "localServerEnabled"
         static let cloudURL = "cloudURL"
+        static let authToken = "authToken"
         static let streamQuality = "streamQuality"
         static let frameRate = "frameRate"
         static let autoConnect = "autoConnect"
@@ -36,6 +37,11 @@ public final class StreamingSettings: ObservableObject {
     /// Cloud server URL
     @Published public var cloudURL: String {
         didSet { UserDefaults.standard.set(cloudURL, forKey: Keys.cloudURL) }
+    }
+    
+    /// JWT auth token for MentraOS cloud authentication
+    @Published public var authToken: String {
+        didSet { UserDefaults.standard.set(authToken, forKey: Keys.authToken) }
     }
     
     /// JPEG compression quality for streaming (0.1 - 1.0)
@@ -85,10 +91,14 @@ public final class StreamingSettings: ObservableObject {
     private init() {
         let defaults = UserDefaults.standard
         
+        // Default JWT token for MentraOS cloud (24-hour expiry, regenerate as needed)
+        let defaultToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAbWVudHJhLmdsYXNzIiwic3ViIjoidGVzdC11c2VyIiwiaWF0IjoxNzY2Mjc0Nzk0LCJleHAiOjE3NjYzNjExOTR9.nL1h7AnOXO79gbOHeYLOagWzXySvwbPEgjthFx_Rs6o"
+        
         // Load saved settings or use defaults
         self.cloudStreamingEnabled = defaults.object(forKey: Keys.cloudStreamingEnabled) as? Bool ?? true
         self.localServerEnabled = defaults.object(forKey: Keys.localServerEnabled) as? Bool ?? true
         self.cloudURL = defaults.string(forKey: Keys.cloudURL) ?? "https://olive-results-train.loca.lt"
+        self.authToken = defaults.string(forKey: Keys.authToken) ?? defaultToken
         self.streamQuality = defaults.object(forKey: Keys.streamQuality) as? Double ?? 0.5
         self.frameRate = defaults.object(forKey: Keys.frameRate) as? Int ?? 10
         self.autoConnect = defaults.object(forKey: Keys.autoConnect) as? Bool ?? true

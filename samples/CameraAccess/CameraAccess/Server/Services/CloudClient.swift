@@ -51,11 +51,16 @@ public final class CloudClient: ObservableObject {
         StreamingSettings.shared.cloudBaseURL ?? URL(string: "https://olive-results-train.loca.lt")!
     }
     
-    /// WebSocket URL for real-time communication (MentraOS uses /glasses-ws)
+    /// WebSocket URL for real-time communication (MentraOS uses /glasses-ws with JWT auth)
     public var webSocketURL: URL {
         var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)!
         components.scheme = baseURL.scheme == "https" ? "wss" : "ws"
         components.path = "/glasses-ws"
+        // Add JWT token for authentication
+        let token = StreamingSettings.shared.authToken
+        if !token.isEmpty {
+            components.queryItems = [URLQueryItem(name: "token", value: token)]
+        }
         return components.url!
     }
     
