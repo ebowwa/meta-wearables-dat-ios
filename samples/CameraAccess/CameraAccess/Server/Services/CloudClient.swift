@@ -223,10 +223,14 @@ public final class CloudClient: ObservableObject {
     
     // MARK: - Private
     
+    private var reconnectAttempts = 0
+    private let maxReconnectAttempts = 5
+    
     private func receiveMessages() {
         webSocketTask?.receive { [weak self] result in
             switch result {
             case .success(let message):
+                self?.reconnectAttempts = 0 // Reset on success
                 switch message {
                 case .data(let data):
                     self?.handleMessage(data)
@@ -243,7 +247,28 @@ public final class CloudClient: ObservableObject {
             case .failure(let error):
                 print("☁️ Receive error: \(error)")
                 self?.isConnected = false
+                self?.webSocketTask = nil
+                
+                // Auto-reconnect with backoff
+                self?.scheduleReconnect()
             }
+        }
+    }
+    
+    private func scheduleReconnect() {
+        guard StreamingSettings.shared.cloudStreamingEnabled else { return }
+        guard reconnectAttempts < maxReconnectAttempts else {
+            print("☁️ Max reconnection attempts reached")
+            return
+        }
+        
+        reconnectAttempts += 1
+        let delay = Double(min(pow(2.0, Double(reconnectAttempts)), 30)) // Max 30 seconds
+        
+        print("☁️ Reconnecting in \(Int(delay))s (attempt \(reconnectAttempts)/\(maxReconnectAttempts))")
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            self?.connect()
         }
     }
     
