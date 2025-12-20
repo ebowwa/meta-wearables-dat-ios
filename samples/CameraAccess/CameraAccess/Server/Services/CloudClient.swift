@@ -38,13 +38,30 @@ public final class CloudClient: ObservableObject {
     
     // MARK: - Properties
     
-    public let config: CloudConfig
-    
     @Published public private(set) var isConnected: Bool = false
     @Published public private(set) var lastError: String?
     
     private var webSocketTask: URLSessionWebSocketTask?
     private let session = URLSession.shared
+    
+    // MARK: - Computed URLs (uses StreamingSettings dynamically)
+    
+    /// Current cloud base URL from settings
+    private var baseURL: URL {
+        StreamingSettings.shared.cloudBaseURL ?? URL(string: "https://olive-results-train.loca.lt")!
+    }
+    
+    /// WebSocket URL for real-time communication
+    public var webSocketURL: URL {
+        var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)!
+        components.scheme = baseURL.scheme == "https" ? "wss" : "ws"
+        return components.url!
+    }
+    
+    /// Health check endpoint
+    public var healthURL: URL {
+        baseURL.appendingPathComponent("health")
+    }
     
     // MARK: - Singleton
     
@@ -52,16 +69,14 @@ public final class CloudClient: ObservableObject {
     
     // MARK: - Initialization
     
-    public init(config: CloudConfig = .default) {
-        self.config = config
-    }
+    public init() {}
     
     // MARK: - Health Check
     
     /// Check if the cloud server is reachable
     public func checkHealth() async -> Bool {
         do {
-            let (data, response) = try await session.data(from: config.healthURL)
+            let (data, response) = try await session.data(from: healthURL)
             
             guard let httpResponse = response as? HTTPURLResponse,
                   httpResponse.statusCode == 200 else {
@@ -90,9 +105,9 @@ public final class CloudClient: ObservableObject {
     public func connect() {
         guard webSocketTask == nil else { return }
         
-        print("☁️ Connecting to cloud: \(config.webSocketURL)")
+        print("☁️ Connecting to cloud: \(webSocketURL)")
         
-        webSocketTask = session.webSocketTask(with: config.webSocketURL)
+        webSocketTask = session.webSocketTask(with: webSocketURL)
         webSocketTask?.resume()
         
         receiveMessages()
@@ -179,7 +194,7 @@ public final class CloudClient: ObservableObject {
     
     /// Send a photo to the cloud server
     public func uploadPhoto(_ data: Data, filename: String) async -> Bool {
-        let uploadURL = config.baseURL.appendingPathComponent("api/upload")
+        let uploadURL = baseURL.appendingPathComponent("api/upload")
         
         var request = URLRequest(url: uploadURL)
         request.httpMethod = "POST"
