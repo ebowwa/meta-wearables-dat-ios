@@ -20,6 +20,7 @@ struct NonStreamView: View {
   @ObservedObject var viewModel: StreamSessionViewModel
   @ObservedObject var wearablesVM: WearablesViewModel
   @State private var sheetHeight: CGFloat = 300
+  @State private var showStreamingSettings = false
 
   var body: some View {
     ZStack {
@@ -27,8 +28,29 @@ struct NonStreamView: View {
 
       VStack {
         HStack {
+          // Cloud connection indicator
+          if CloudClient.shared.isConnected {
+            HStack(spacing: 4) {
+              Circle()
+                .fill(.green)
+                .frame(width: 8, height: 8)
+              Text("Cloud")
+                .font(.caption)
+                .foregroundColor(.green)
+            }
+          }
+          
           Spacer()
+          
           Menu {
+            Button {
+              showStreamingSettings = true
+            } label: {
+              Label("Streaming Settings", systemImage: "antenna.radiowaves.left.and.right")
+            }
+            
+            Divider()
+            
             Button("Disconnect", role: .destructive) {
               wearablesVM.disconnectGlasses()
             }
@@ -98,6 +120,19 @@ struct NonStreamView: View {
           .presentationDragIndicator(.visible)
       } else {
         GettingStartedSheetView(height: $sheetHeight)
+      }
+    }
+    .sheet(isPresented: $showStreamingSettings) {
+      NavigationStack {
+        StreamingSettingsView()
+          .navigationBarTitleDisplayMode(.inline)
+          .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+              Button("Done") {
+                showStreamingSettings = false
+              }
+            }
+          }
       }
     }
   }
