@@ -53,10 +53,20 @@ struct CameraAccessApp: App {
     // Start the ASG Camera Server for external access
     // Other devices can access the camera at http://[device-ip]:8089
     startCameraServer()
+    
+    // Connect to MentraOS Cloud Server if enabled
+    connectToCloudServer()
   }
   
   /// Start the ASG Camera Server
   private func startCameraServer() {
+    let settings = StreamingSettings.shared
+    
+    guard settings.localServerEnabled else {
+      NSLog("[CameraAccess] 📡 Local server disabled in settings")
+      return
+    }
+    
     let config = ServerConfig(
       port: 8089,
       serverName: "Meta Glasses Camera Server",
@@ -70,6 +80,30 @@ struct CameraAccessApp: App {
       }
     } else {
       NSLog("[CameraAccess] ❌ Failed to start ASG Camera Server")
+    }
+  }
+  
+  /// Connect to MentraOS Cloud Server
+  private func connectToCloudServer() {
+    let settings = StreamingSettings.shared
+    
+    guard settings.cloudStreamingEnabled || settings.autoConnect else {
+      NSLog("[CameraAccess] ☁️ Cloud streaming disabled in settings")
+      return
+    }
+    
+    NSLog("[CameraAccess] ☁️ Connecting to cloud: \(settings.cloudURL)")
+    
+    Task {
+      // Check cloud health first
+      let healthy = await CloudClient.shared.checkHealth()
+      
+      if healthy {
+        CloudClient.shared.connect()
+        NSLog("[CameraAccess] ☁️ Connected to MentraOS Cloud at: \(settings.cloudURL)")
+      } else {
+        NSLog("[CameraAccess] ☁️ Cloud server not reachable: \(settings.cloudURL)")
+      }
     }
   }
 
