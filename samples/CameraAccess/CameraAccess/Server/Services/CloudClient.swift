@@ -51,10 +51,11 @@ public final class CloudClient: ObservableObject {
         StreamingSettings.shared.cloudBaseURL ?? URL(string: "https://olive-results-train.loca.lt")!
     }
     
-    /// WebSocket URL for real-time communication
+    /// WebSocket URL for real-time communication (MentraOS uses /glasses-ws)
     public var webSocketURL: URL {
         var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)!
         components.scheme = baseURL.scheme == "https" ? "wss" : "ws"
+        components.path = "/glasses-ws"
         return components.url!
     }
     
