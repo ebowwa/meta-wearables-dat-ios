@@ -18,6 +18,9 @@ import MWDATCamera
 import MWDATCore
 import SwiftUI
 
+// MARK: - Server Integration
+// The ASG Camera Server exposes the glasses camera over HTTP for external access
+
 enum StreamingStatus {
   case streaming
   case waiting
@@ -93,6 +96,11 @@ class StreamSessionViewModel: ObservableObject {
           if !self.hasReceivedFirstFrame {
             self.hasReceivedFirstFrame = true
           }
+          
+          // Send frame to ASG Camera Server for external access via HTTP
+          if let jpegData = image.jpegData(compressionQuality: 0.7) {
+            ASGServerManager.shared.updateLatestPhoto(jpegData)
+          }
         }
       }
     }
@@ -119,6 +127,11 @@ class StreamSessionViewModel: ObservableObject {
         if let uiImage = UIImage(data: photoData.data) {
           self.capturedPhoto = uiImage
           self.showPhotoPreview = true
+          
+          // Save captured photo to ASG Camera Server gallery
+          // This makes the photo available via the /api/gallery endpoint
+          let filename = "photo_\(Int(Date().timeIntervalSince1970 * 1000)).jpg"
+          _ = ASGServerManager.shared.savePhoto(photoData.data, named: filename)
         }
       }
     }
