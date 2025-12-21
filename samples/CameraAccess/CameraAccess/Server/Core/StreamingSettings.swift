@@ -97,7 +97,7 @@ public final class StreamingSettings: ObservableObject {
         // Load saved settings or use defaults
         self.cloudStreamingEnabled = defaults.object(forKey: Keys.cloudStreamingEnabled) as? Bool ?? true
         self.localServerEnabled = defaults.object(forKey: Keys.localServerEnabled) as? Bool ?? true
-        self.cloudURL = defaults.string(forKey: Keys.cloudURL) ?? "https://olive-results-train.loca.lt"
+        self.cloudURL = defaults.string(forKey: Keys.cloudURL) ?? "https://6bd3f5f5f3f2.ngrok-free.app"
         self.authToken = defaults.string(forKey: Keys.authToken) ?? defaultToken
         self.streamQuality = defaults.object(forKey: Keys.streamQuality) as? Double ?? 0.5
         self.frameRate = defaults.object(forKey: Keys.frameRate) as? Int ?? 10
