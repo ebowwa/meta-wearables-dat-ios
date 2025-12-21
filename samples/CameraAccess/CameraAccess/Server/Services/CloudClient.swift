@@ -118,11 +118,11 @@ public final class CloudClient: ObservableObject {
         
         receiveMessages()
         
-        // Send initial connection message
+        // Send CONNECTION_INIT message (required by MentraOS cloud)
+        // See: GlassesToCloudMessageType.CONNECTION_INIT
         let connectMessage: [String: Any] = [
-            "type": "connect",
-            "client": "meta-glasses-ios",
-            "timestamp": Date().timeIntervalSince1970
+            "type": "connection_init",
+            "timestamp": ISO8601DateFormatter().string(from: Date())
         ]
         
         if let data = try? JSONSerialization.data(withJSONObject: connectMessage) {
