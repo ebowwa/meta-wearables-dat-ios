@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "MacReceiver",
     platforms: [
-        .macOS(.v13)
+        .macOS(.v14)
     ],
     products: [
         .executable(name: "MacReceiver", targets: ["MacReceiver"])

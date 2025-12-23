@@ -7,11 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		AABBCC112F00000000000001 /* VideoRelayService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABBCC002F00000000000001 /* VideoRelayService.swift */; };
-		AABBCC122F00000000000002 /* RelayStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABBCC002F00000000000002 /* RelayStatusView.swift */; };
-		MACRCV001000000000000001 /* MacReceiverApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = MACRCV000000000000000001 /* MacReceiverApp.swift */; };
-		MACRCV001000000000000002 /* MacReceiverContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = MACRCV000000000000000002 /* MacReceiverContentView.swift */; };
-		MACRCV001000000000000003 /* VideoRelayService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABBCC002F00000000000001 /* VideoRelayService.swift */; };
 		8F2D23802E856711002D0588 /* DebugMenuViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F2D237F2E856711002D0588 /* DebugMenuViewModel.swift */; };
 		8F8F00782E8ACB4600A4BDAF /* WearablesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F8F00772E8ACB4500A4BDAF /* WearablesViewModel.swift */; };
 		8FD96B7F2E6F0A9800F56AB1 /* CameraAccessApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FD96B792E6F0A9800F56AB1 /* CameraAccessApp.swift */; };
@@ -33,12 +28,17 @@
 		8FFD60542E849D0D0035E446 /* RegistrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FFD60532E849D0D0035E446 /* RegistrationView.swift */; };
 		8FFD60602E84A2F70035E446 /* MainAppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FFD605F2E84A2F70035E446 /* MainAppView.swift */; };
 		8FFD60612E84A2F70035E446 /* DebugMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FFD605E2E84A2F70035E446 /* DebugMenuView.swift */; };
+		AABBCC112F00000000000001 /* VideoRelayService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABBCC002F00000000000001 /* VideoRelayService.swift */; };
+		AABBCC122F00000000000002 /* RelayStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABBCC002F00000000000002 /* RelayStatusView.swift */; };
 		E66D30242E7DA71900470B48 /* MockDeviceKitButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = E66D30232E7DA71900470B48 /* MockDeviceKitButton.swift */; };
 		E6A188482EB918740097D0E1 /* StreamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6A188472EB918740097D0E1 /* StreamView.swift */; };
 		E6DA451D2E79A63100E3F688 /* MockDeviceCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6DA45182E79A63100E3F688 /* MockDeviceCardView.swift */; };
 		E6DA451E2E79A63100E3F688 /* CardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6DA45172E79A63100E3F688 /* CardView.swift */; };
 		E6DA451F2E79A63100E3F688 /* MockDeviceKitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6DA451A2E79A63100E3F688 /* MockDeviceKitView.swift */; };
 		E6FD3BCE2EB4D53A00E7FE5D /* NonStreamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6FD3BCD2EB4D53A00E7FE5D /* NonStreamView.swift */; };
+		MACRCV001000000000000001 /* MacReceiverApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = MACRCV000000000000000001 /* MacReceiverApp.swift */; };
+		MACRCV001000000000000002 /* MacReceiverContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = MACRCV000000000000000002 /* MacReceiverContentView.swift */; };
+		MACRCV001000000000000003 /* VideoRelayService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABBCC002F00000000000001 /* VideoRelayService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -65,12 +65,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		AABBCC002F00000000000001 /* VideoRelayService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoRelayService.swift; sourceTree = "<group>"; };
-		AABBCC002F00000000000002 /* RelayStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelayStatusView.swift; sourceTree = "<group>"; };
-		MACRCV000000000000000001 /* MacReceiverApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacReceiverApp.swift; sourceTree = "<group>"; };
-		MACRCV000000000000000002 /* MacReceiverContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacReceiverContentView.swift; sourceTree = "<group>"; };
-		MACRCV000000000000000003 /* MacReceiver.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MacReceiver.entitlements; sourceTree = "<group>"; };
-		MACRCV000000000000000099 /* MacReceiver.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacReceiver.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3A3A3A3A3A3A3A3A3A3A3A3A /* CameraAccess.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CameraAccess.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8F2D237F2E856711002D0588 /* DebugMenuViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugMenuViewModel.swift; sourceTree = "<group>"; };
 		8F8F00772E8ACB4500A4BDAF /* WearablesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WearablesViewModel.swift; sourceTree = "<group>"; };
@@ -92,6 +86,8 @@
 		8FFD60532E849D0D0035E446 /* RegistrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegistrationView.swift; sourceTree = "<group>"; };
 		8FFD605E2E84A2F70035E446 /* DebugMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugMenuView.swift; sourceTree = "<group>"; };
 		8FFD605F2E84A2F70035E446 /* MainAppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainAppView.swift; sourceTree = "<group>"; };
+		AABBCC002F00000000000001 /* VideoRelayService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoRelayService.swift; sourceTree = "<group>"; };
+		AABBCC002F00000000000002 /* RelayStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelayStatusView.swift; sourceTree = "<group>"; };
 		E66D30232E7DA71900470B48 /* MockDeviceKitButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDeviceKitButton.swift; sourceTree = "<group>"; };
 		E699CC952E8150670052C240 /* CameraAccessTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CameraAccessTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E6A188472EB918740097D0E1 /* StreamView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamView.swift; sourceTree = "<group>"; };
@@ -99,6 +95,10 @@
 		E6DA45182E79A63100E3F688 /* MockDeviceCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDeviceCardView.swift; sourceTree = "<group>"; };
 		E6DA451A2E79A63100E3F688 /* MockDeviceKitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDeviceKitView.swift; sourceTree = "<group>"; };
 		E6FD3BCD2EB4D53A00E7FE5D /* NonStreamView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NonStreamView.swift; sourceTree = "<group>"; };
+		MACRCV000000000000000001 /* MacReceiverApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacReceiverApp.swift; sourceTree = "<group>"; };
+		MACRCV000000000000000002 /* MacReceiverContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacReceiverContentView.swift; sourceTree = "<group>"; };
+		MACRCV000000000000000003 /* MacReceiver.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MacReceiver.entitlements; sourceTree = "<group>"; };
+		MACRCV000000000000000099 /* MacReceiver.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacReceiver.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -145,16 +145,6 @@
 				E699CC952E8150670052C240 /* CameraAccessTests.xctest */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		MACRCV000000000000000100 /* MacReceiver */ = {
-			isa = PBXGroup;
-			children = (
-				MACRCV000000000000000001 /* MacReceiverApp.swift */,
-				MACRCV000000000000000002 /* MacReceiverContentView.swift */,
-				MACRCV000000000000000003 /* MacReceiver.entitlements */,
-			);
-			path = MacReceiver;
 			sourceTree = "<group>";
 		};
 		8F2A14F12DDBCEB900D4E5F2 /* Frameworks */ = {
@@ -220,14 +210,6 @@
 			path = Components;
 			sourceTree = "<group>";
 		};
-		AABBCC032F00000000000003 /* Services */ = {
-			isa = PBXGroup;
-			children = (
-				AABBCC002F00000000000001 /* VideoRelayService.swift */,
-			);
-			path = Services;
-			sourceTree = "<group>";
-		};
 		8FFD5FF82E8422B60035E446 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
@@ -245,6 +227,14 @@
 			path = MockDeviceKit;
 			sourceTree = "<group>";
 		};
+		AABBCC032F00000000000003 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				AABBCC002F00000000000001 /* VideoRelayService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
 		E6DA451B2E79A63100E3F688 /* MockDeviceKit */ = {
 			isa = PBXGroup;
 			children = (
@@ -253,6 +243,16 @@
 				E66D30232E7DA71900470B48 /* MockDeviceKitButton.swift */,
 			);
 			path = MockDeviceKit;
+			sourceTree = "<group>";
+		};
+		MACRCV000000000000000100 /* MacReceiver */ = {
+			isa = PBXGroup;
+			children = (
+				MACRCV000000000000000001 /* MacReceiverApp.swift */,
+				MACRCV000000000000000002 /* MacReceiverContentView.swift */,
+				MACRCV000000000000000003 /* MacReceiver.entitlements */,
+			);
+			path = MacReceiver;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -328,12 +328,12 @@
 					8A8A8A8A8A8A8A8A8A8A8A8A = {
 						CreatedOnToolsVersion = 12.5;
 					};
-					MACRCV000000000000000200 = {
-						CreatedOnToolsVersion = 15.0;
-					};
 					E699CC942E8150670052C240 = {
 						CreatedOnToolsVersion = 26.0;
 						TestTargetID = 8A8A8A8A8A8A8A8A8A8A8A8A;
+					};
+					MACRCV000000000000000200 = {
+						CreatedOnToolsVersion = 15.0;
 					};
 				};
 			};
@@ -386,16 +386,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		MACRCV000000000000000201 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				MACRCV001000000000000001 /* MacReceiverApp.swift in Sources */,
-				MACRCV001000000000000002 /* MacReceiverContentView.swift in Sources */,
-				MACRCV001000000000000003 /* VideoRelayService.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		AAAAAAAAAAAAAAAAAAAAAA /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -435,6 +425,16 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		MACRCV000000000000000201 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				MACRCV001000000000000001 /* MacReceiverApp.swift in Sources */,
+				MACRCV001000000000000002 /* MacReceiverContentView.swift in Sources */,
+				MACRCV001000000000000003 /* VideoRelayService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -457,7 +457,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = XC95HBTW84;
+				DEVELOPMENT_TEAM = 42R8ZPM5N8;
 				ENABLE_PREVIEWS = YES;
 				FRAMEWORK_SEARCH_PATHS = "";
 				INFOPLIST_FILE = CameraAccess/Info.plist;
@@ -486,7 +486,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = XC95HBTW84;
+				DEVELOPMENT_TEAM = 42R8ZPM5N8;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = CameraAccess/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;

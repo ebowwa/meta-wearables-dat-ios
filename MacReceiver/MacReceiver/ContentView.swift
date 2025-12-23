@@ -33,7 +33,7 @@ struct ContentView: View {
                 StreamingView(viewModel: viewModel)
             }
         }
-        .frame(minWidth: 600, minHeight: 400)
+        .frame(minWidth: 800, minHeight: 450)
         .onAppear {
             viewModel.startReceiving()
         }
@@ -91,7 +91,7 @@ struct WaitingForConnectionView: View {
 
                 InstructionRow(
                     number: "2",
-                    icon: "toggle.on",
+                    icon: "switch.2",
                     text: "Enable \"Mac Relay\" in the app"
                 )
 
@@ -253,6 +253,9 @@ struct StreamingView: View {
                     }
             }
 
+            // Bounding Box Overlay
+            BoundingBoxOverlay(detections: viewModel.detections, imageSize: viewModel.currentFrame?.size)
+
             // Controls overlay
             if showControls {
                 VStack {
@@ -281,7 +284,7 @@ struct StreamingView: View {
                         HStack(spacing: 20) {
                             StatBadge(icon: "speedometer", value: String(format: "%.1f fps", viewModel.frameRate))
                             StatBadge(icon: "arrow.down.circle", value: viewModel.bandwidthText)
-                            StatBadge(icon: "clock", value: String(format: "%.0fms", viewModel.latencyMs))
+                            StatBadge(icon: "cpu", value: String(format: "%.0f ms", viewModel.inferenceTimeMs))
                         }
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
@@ -293,8 +296,34 @@ struct StreamingView: View {
                     Spacer()
 
                     // Bottom bar - controls
-                    HStack(spacing: 24) {
+                    HStack(spacing: 16) {
                         Spacer()
+
+                        // FPS Control
+                        VStack(spacing: 4) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "speedometer")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.white)
+                                Text("Target FPS: \(Int(viewModel.targetInferenceFPS))")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.gray)
+                            }
+                            Slider(value: $viewModel.targetInferenceFPS, in: 1...30, step: 1)
+                                .frame(width: 120)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.black.opacity(0.6))
+                        .cornerRadius(8)
+
+                        // YOLO Toggle
+                        ControlButton(
+                             icon: "brain.head.profile",
+                             label: "YOLO Detect",
+                             isActive: viewModel.isYOLOEnabled,
+                             action: { viewModel.isYOLOEnabled.toggle() }
+                        )
 
                         // Screenshot button
                         ControlButton(
@@ -376,7 +405,7 @@ struct StatBadge: View {
                 .foregroundColor(.gray)
 
             Text(value)
-                .font(.system(size: 13, weight: .medium).monospacedDigit())
+                .font(.system(size: 13, weight: .medium).monospaced())
                 .foregroundColor(.white)
         }
     }
@@ -414,12 +443,18 @@ class ReceiverViewModel: ObservableObject {
     @Published var recordingBlink = true
     @Published var frameRate: Double = 0
     @Published var bytesPerSecond: Int = 0
+    @Published var detections: [YOLOClient.Detection] = []
+    @Published var isYOLOEnabled = false
+    @Published var inferenceTimeMs: Double = 0
     @Published var latencyMs: Double = 0
     @Published var connectedSource: String?
-
+    @Published var targetInferenceFPS: Double = 10.0
+    
     private let relay = VideoRelayService(mode: .receiver, deviceName: Host.current().localizedName ?? "Mac Receiver")
     private var lastFrameTime: Date?
+    private var lastInferenceTime: Date?
     private var blinkTimer: Timer?
+    private var inferenceTask: Task<Void, Never>?
 
     var viewState: ViewState {
         if isReceiving && currentFrame != nil {
@@ -448,16 +483,47 @@ class ReceiverViewModel: ObservableObject {
         // Observe relay changes
         Task { @MainActor in
             for await frame in relay.$receivedFrame.values {
-                if let frame = frame {
-                    self.currentFrame = frame
-                    self.isReceiving = true
+                guard let frame = frame else { continue }
+                
+                self.currentFrame = frame
+                self.isReceiving = true
 
-                    // Calculate latency (approximate - time between frames)
-                    if let lastTime = self.lastFrameTime {
-                        let delta = Date().timeIntervalSince(lastTime) * 1000
-                        self.latencyMs = delta
+                // Calculate latency (approximate - time between frames)
+                if let lastTime = self.lastFrameTime {
+                    let delta = Date().timeIntervalSince(lastTime) * 1000
+                    self.latencyMs = delta
+                }
+                self.lastFrameTime = Date()
+                
+                // Trigger inference if enabled and throttled by target FPS
+                if self.isYOLOEnabled && self.inferenceTask == nil {
+                    let now = Date()
+                    let minInterval = 1.0 / self.targetInferenceFPS
+                    
+                    if let lastInference = self.lastInferenceTime {
+                        let elapsed = now.timeIntervalSince(lastInference)
+                        if elapsed < minInterval {
+                            continue // Skip this frame to maintain target FPS
+                        }
                     }
-                    self.lastFrameTime = Date()
+                    
+                    self.lastInferenceTime = now
+                    self.inferenceTask = Task {
+                        do {
+                            let result = try await YOLOClient.shared.infer(image: frame)
+                            
+                            await MainActor.run {
+                                self.detections = result.detections
+                                self.inferenceTimeMs = Double(result.inference_time_ms)
+                                self.inferenceTask = nil
+                            }
+                        } catch {
+                            print("[YOLO] Inference error: \(error)")
+                            await MainActor.run {
+                                self.inferenceTask = nil
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -535,4 +601,58 @@ class ReceiverViewModel: ObservableObject {
 
 #Preview {
     ContentView()
+}
+
+// MARK: - Bounding Box Overlay
+
+struct BoundingBoxOverlay: View {
+    let detections: [YOLOClient.Detection]
+    let imageSize: CGSize?
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ForEach(detections) { detection in
+                makeBox(for: detection, in: geometry.size)
+            }
+        }
+        .allowsHitTesting(false) // Let clicks pass through to video
+    }
+    
+    private func makeBox(for detection: YOLOClient.Detection, in viewSize: CGSize) -> some View {
+        // Use normalized coordinates [cx, cy, w, h] from API
+        // cx, cy are center coordinates (0-1)
+        // w, h are width/height (0-1)
+        
+        let cx = CGFloat(detection.bbox_normalized[0])
+        let cy = CGFloat(detection.bbox_normalized[1])
+        let w = CGFloat(detection.bbox_normalized[2])
+        let h = CGFloat(detection.bbox_normalized[3])
+        
+        // Convert to view coordinates
+        // Note: This naive scaling assumes the image fills the view exactly (Aspect Fill)
+        // or the viewSize matches the image aspect ratio.
+        // For Aspect Fit inside a frame, there might be black bars, 
+        // but GeometryReader typically gives the full view area.
+        
+        let width = w * viewSize.width
+        let height = h * viewSize.height
+        
+        let x = (cx * viewSize.width) - (width / 2)
+        let y = (cy * viewSize.height) - (height / 2)
+        
+        return ZStack(alignment: .topLeading) {
+            Rectangle()
+                .stroke(Color.green, lineWidth: 3)
+            
+            Text("\(detection.class_name) \(Int(detection.confidence * 100))%")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.black)
+                .padding(4)
+                .background(Color.green)
+                .cornerRadius(4)
+                .offset(y: -24)
+        }
+        .frame(width: max(1, width), height: max(1, height))
+        .position(x: x + width/2, y: y + height/2)
+    }
 }
