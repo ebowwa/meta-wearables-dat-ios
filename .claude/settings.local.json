@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(xcodebuild:*)",
+      "Bash(cat:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(/opt/homebrew/opt/huggingface-cli/bin/hf download:*)",
+      "Bash(find:*)",
+      "Bash(du:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}

@@ -14,6 +14,7 @@
 // video frame handling, photo capture, and error handling.
 //
 
+import Combine
 import MWDATCamera
 import MWDATCore
 import SwiftUI
@@ -32,6 +33,12 @@ class StreamSessionViewModel: ObservableObject {
   @Published var showError: Bool = false
   @Published var errorMessage: String = ""
   @Published var hasActiveDevice: Bool = false
+
+  // Depth prediction
+  @Published var currentDepthMap: UIImage?
+  @Published var showDepthPrediction: Bool = false
+  @Published var isProcessingDepthPrediction: Bool = false
+  private let depthPredictionService = DepthPredictionService()
 
   var isStreaming: Bool {
     streamingStatus != .stopped
@@ -56,6 +63,7 @@ class StreamSessionViewModel: ObservableObject {
   private let wearables: WearablesInterface
   private let deviceSelector: AutoDeviceSelector
   private var deviceMonitorTask: Task<Void, Never>?
+  private var cancellables = Set<AnyCancellable>()
 
   init(wearables: WearablesInterface) {
     self.wearables = wearables
@@ -93,9 +101,30 @@ class StreamSessionViewModel: ObservableObject {
           if !self.hasReceivedFirstFrame {
             self.hasReceivedFirstFrame = true
           }
+
+          // Process for depth prediction if enabled
+          if self.showDepthPrediction {
+            self.depthPredictionService.predictDepth(from: image)
+          }
         }
       }
     }
+
+    // Subscribe to depth prediction results
+    depthPredictionService.$depthMapImage
+      .receive(on: RunLoop.main)
+      .sink { [weak self] depthMap in
+        self?.currentDepthMap = depthMap
+      }
+      .store(in: &cancellables)
+
+    // Subscribe to depth prediction processing state
+    depthPredictionService.$isProcessing
+      .receive(on: RunLoop.main)
+      .sink { [weak self] isProcessing in
+        self?.isProcessingDepthPrediction = isProcessing
+      }
+      .store(in: &cancellables)
 
     // Subscribe to streaming errors
     // Errors include device disconnection, streaming failures, etc.
@@ -185,6 +214,13 @@ class StreamSessionViewModel: ObservableObject {
   func dismissPhotoPreview() {
     showPhotoPreview = false
     capturedPhoto = nil
+  }
+
+  func toggleDepthPrediction() {
+    showDepthPrediction.toggle()
+    if !showDepthPrediction {
+      currentDepthMap = nil
+    }
   }
 
   private func startTimer() {

@@ -27,14 +27,53 @@ struct StreamView: View {
       Color.black
         .edgesIgnoringSafeArea(.all)
 
-      // Video backdrop
+      // Video backdrop - side by side with depth map when enabled
       if let videoFrame = viewModel.currentVideoFrame, viewModel.hasReceivedFirstFrame {
         GeometryReader { geometry in
-          Image(uiImage: videoFrame)
-            .resizable()
-            .aspectRatio(contentMode: .fill)
+          if viewModel.showDepthPrediction {
+            // Side-by-side view: video + depth map
+            HStack(spacing: 0) {
+              // Original video
+              Image(uiImage: videoFrame)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(maxWidth: geometry.size.width / 2)
+                .clipped()
+
+              // Depth map
+              if let depthMap = viewModel.currentDepthMap {
+                Image(uiImage: depthMap)
+                  .resizable()
+                  .aspectRatio(contentMode: .fill)
+                  .frame(maxWidth: geometry.size.width / 2)
+                  .clipped()
+              } else if viewModel.isProcessingDepthPrediction {
+                // Loading indicator for depth map
+                  ZStack {
+                    Color.black.opacity(0.3)
+                    ProgressView()
+                      .foregroundColor(.white)
+                  }
+                  .frame(maxWidth: geometry.size.width / 2)
+              } else {
+                // Placeholder when depth prediction is off
+                Color.black.opacity(0.3)
+                  .frame(maxWidth: geometry.size.width / 2)
+                  .overlay(
+                    Text("Depth Map")
+                      .foregroundColor(.white.opacity(0.5))
+                  )
+              }
+            }
             .frame(width: geometry.size.width, height: geometry.size.height)
-            .clipped()
+          } else {
+            // Full video view (original behavior)
+            Image(uiImage: videoFrame)
+              .resizable()
+              .aspectRatio(contentMode: .fill)
+              .frame(width: geometry.size.width, height: geometry.size.height)
+              .clipped()
+          }
         }
         .edgesIgnoringSafeArea(.all)
       } else {
@@ -104,6 +143,14 @@ struct ControlsView: View {
       ) {
         let nextTimeLimit = viewModel.activeTimeLimit.next
         viewModel.setTimeLimit(nextTimeLimit)
+      }
+
+      // Depth prediction toggle button
+      CircleButton(
+        icon: viewModel.showDepthPrediction ? "cube.fill" : "cube",
+        text: nil
+      ) {
+        viewModel.toggleDepthPrediction()
       }
 
       // Photo button
